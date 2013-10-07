@@ -162,9 +162,16 @@ def morphfit_scans (test_name):
         evaluate_distances(f, testset_path, result_path)
 
 # 3. Evaluate query results
+def evaluate_results(test_name):
+	result_path = test_path + test_name + "\\" + result_folder
+	last_rank_evaluation(result_path) 
 
 # 1-3. Full test
-
+def full_test(test_name):
+	build_mm_fast (test_name)
+	generate_random_testingsets_fast (test_name)
+	morphfit_scans (test_name)
+	evaluate_results(test_name)
 
 
 
@@ -207,8 +214,9 @@ def cleanup_exe():
     cleanup_filter(exe_path, ["py", "exe"])
 
 def cleanup_test(test_name):
-    print "Removing test folder for test", test_name
-    shutil.rmtree(test_path + test_name)
+	if os.path.exists(test_path + test_name):
+		print "Removing test folder for test", test_name
+		shutil.rmtree(test_path + test_name)
                 
  # Move files #
  # Move files that have the substring filter_list in them from from_dir to to_dir
@@ -227,7 +235,7 @@ def move_files_filter (from_dir, to_dir, filter_list):
  # Evaluates the distance between a single query files and all test files
 def evaluate_distances(q_file, test_path, result_path):
     q_vector = file_to_list(q_file)
-    name = q_file.name[-27:-24]
+    name = q_file.name[-28:-25]
 
     # create file containing ordered list of file rankings
     result_file = open(result_path + name + '.txt', 'w+')
@@ -304,7 +312,29 @@ def get_random_scans (amount, excluded_list, escan_only = False):
 
     
 # Rank scans
-
+# lat_rank_evaluation evaluates all files in a directory using last_rank
+def last_rank_evaluation(path):
+	total_index = 0
+	for filename in os.listdir(path):
+		f = open(path + filename, 'r')
+		index = last_rank(f, filename[0:3])
+		total_index = total_index + index
+	last_r = total_index / len(os.listdir(path)) 
+	print "last rank =",
+	print last_r
+	
+# last_rank takes the index of the last matching scan and its 
+# distance and writes to file
+def last_rank(file, number):
+	ranks_str = file.read()
+	ranks = ranks_str.split("\n")
+	index = 0
+	rank = 0
+	for x in ranks:
+		if number in x:
+			rank = index + 1
+		index = index + 1
+	return rank
 ## Example plug-in functions
 # Example distance functions
 # Example evaluation functions
@@ -314,4 +344,4 @@ def get_random_scans (amount, excluded_list, escan_only = False):
 #morphfit_scans("test1")
 cleanup_exe()
 cleanup_test("test1")
-
+full_test("test1")
