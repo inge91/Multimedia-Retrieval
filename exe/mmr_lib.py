@@ -185,6 +185,30 @@ def copy_files_filter (from_dir, to_dir, filter_list):
                 #print filename # <- optional spam print
                 shutil.copy(from_dir + filename, to_dir)
                 copied = True
+
+# Remove every file from the directory,
+# except files that have one of the strings in excluded_filters as a substring
+def cleanup_filter(target_dir, excluded_filters):
+    print "Cleaning up", target_dir
+    print "  with excluded filters:"
+    print excluded_filters
+    
+    for filename in os.listdir(target_dir):
+        excluded = False;
+        for name_filter in excluded_filters:
+            if excluded: break
+            if str(name_filter) in filename:
+                excluded = True
+        if not excluded:
+            os.remove(target_dir + filename)
+
+# Clean everything from the exe dir except for python and exe files
+def cleanup_exe():
+    cleanup_filter(exe_path, ["py", "exe"])
+
+def cleanup_test(test_name):
+    print "Removing test folder for test", test_name
+    shutil.rmtree(test_path + test_name)
                 
  # Move files #
  # Move files that have the substring filter_list in them from from_dir to to_dir
@@ -277,6 +301,7 @@ def get_random_scans (amount, excluded_list, escan_only = False):
         selected_scans.append(random.sample(potential_scans, 1)[0])
 
     return selected_scans
+
     
 # Rank scans
 
@@ -284,7 +309,9 @@ def get_random_scans (amount, excluded_list, escan_only = False):
 # Example distance functions
 # Example evaluation functions
 
-build_mm_fast("test1")
-generate_random_testingsets_fast("test1")
-morphfit_scans("test1")
+#build_mm_fast("test1")
+#generate_random_testingsets_fast("test1")
+#morphfit_scans("test1")
+cleanup_exe()
+cleanup_test("test1")
 
