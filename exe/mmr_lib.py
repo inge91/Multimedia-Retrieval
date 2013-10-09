@@ -6,7 +6,7 @@ import os
 import shutil
 import math
 import random
-
+import pickle
 ###  Contents
     ## Big functions
 
@@ -164,7 +164,7 @@ def morphfit_scans (test_name):
 # 3. Evaluate query results
 def evaluate_results(test_name):
 	result_path = test_path + test_name + "\\" + result_folder
-	last_rank_evaluation(result_path) 
+	recall_precision_evaluation(result_path) 
 
 # 1-3. Full test
 def full_test(test_name):
@@ -249,7 +249,7 @@ def evaluate_distances(q_file, test_path, result_path):
             continue
         t_file = open(test_path + filename, 'r')
         t_vector = file_to_list(t_file)
-        dist = calc_distance(q_vector, t_vector)
+        dist = calc_euclidian_weighted_distance(q_vector, t_vector)
         distances = distances + [(filename, dist)]
     # Sort the distances
     distances = sorted(distances,key=lambda x: x[1])
@@ -262,13 +262,23 @@ def evaluate_distances(q_file, test_path, result_path):
 # Fit mm
 # Calculate distance #
 # Returns the Euclidian distance between 2 lists (interpreted as vectors)
-def calc_distance(q_vec, s_vec):
+def calc_euclidian_distance(q_vec, s_vec):
     cumulative = 0
     for i in range(0, len(q_vec)):
         x = q_vec[i]
         y = s_vec[i]
         cumulative = cumulative + (x - y)**2
     return math.sqrt(cumulative)
+	
+def calc_euclidian_weighted_distance(q_vec, s_vec):
+	cumulative = 0
+	for i in range(0, len(q_vec)):
+		x = q_vec[i]
+		y = s_vec[i]
+		w = (1.0 / (i+1))
+		cumulative = cumulative + w *(x - y)**2
+	return math.sqrt(cumulative)	
+	
 
 # File to list #
 # read in a file descriptor and return a list
@@ -335,13 +345,64 @@ def last_rank(file, number):
 			rank = index + 1
 		index = index + 1
 	return rank
+
+# for all files in results applies recall_precision and writes to evaluation
+def recall_precision_evaluation(path):
+	n = os.listdir(path)[0]
+	f = open(path + n, 'r')
+	ranks_str = f.read()
+	ranks = ranks_str.split("\n")
+	l = len(ranks)
+	total_precision = [0] * l
+	total_recall = [0] * l
+	for filename in os.listdir(path):
+		f = open(path + filename, 'r')
+		p, r = recall_precision(f, filename[0:3])
+		total_precision = [i + j for i, j in zip(total_precision, p)]
+		total_recall = [i + j for i, j in zip(total_recall, r)]
+		#total_index = total_index + index
+	total_precision = [x/len(os.listdir(path)) for x in total_precision]
+	total_recall = [x/len(os.listdir(path)) for x in total_recall]
+	total = zip(total_precision, total_recall)
+	pickle.dump(total, open('save.p', 'wb'))
+	print total_precision
+	print total_recall
+	
+# At each index of the ranking calculate precision and recall
+def recall_precision(file, number):
+	ranks_str = file.read()
+	ranks = ranks_str.split("\n")
+	l = len(ranks)
+	precisions = [0] * l
+	recalls = [0] * l
+	for i in range(0, l):
+		r = relevant_shapes(ranks[0:i+1], number)
+		precisions[i] = float(r) / (i + 1)
+		m = relevant_shapes(ranks, number)
+		recalls[i] = float(r) / m	
+	return precisions, recalls
+	
+
+# returns the amount of elements in the list that
+# match the term number 
+def relevant_shapes(ranks, number):
+	matches = 0 
+	for i in ranks:
+		if number in i:
+			matches = matches + 1
+	return matches
+		
+	
+	
 ## Example plug-in functions
 # Example distance functions
 # Example evaluation functions
+
 
 #build_mm_fast("test1")
 #generate_random_testingsets_fast("test1")
 #morphfit_scans("test1")
 cleanup_exe()
-cleanup_test("test1")
-full_test("test1")
+evaluate_results("test1")
+#cleanup_test("test1")
+#full_test("test1")
