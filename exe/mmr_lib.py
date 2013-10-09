@@ -6,7 +6,7 @@ import os
 import shutil
 import math
 import random
-import pickle
+import cPickle
 ###  Contents
     ## Big functions
 
@@ -164,7 +164,7 @@ def morphfit_scans (test_name):
 # 3. Evaluate query results
 def evaluate_results(test_name):
 	result_path = test_path + test_name + "\\" + result_folder
-	recall_precision_evaluation(result_path) 
+	recall_precision_evaluation(result_path, test_name) 
 
 # 1-3. Full test
 def full_test(test_name):
@@ -347,24 +347,35 @@ def last_rank(file, number):
 	return rank
 
 # for all files in results applies recall_precision and writes to evaluation
-def recall_precision_evaluation(path):
+def recall_precision_evaluation(path, test_name):
 	n = os.listdir(path)[0]
 	f = open(path + n, 'r')
 	ranks_str = f.read()
 	ranks = ranks_str.split("\n")
 	l = len(ranks)
+	
+	# create total precision and recall list
 	total_precision = [0] * l
 	total_recall = [0] * l
 	for filename in os.listdir(path):
 		f = open(path + filename, 'r')
 		p, r = recall_precision(f, filename[0:3])
+		# add new calculated precision and recall to total
 		total_precision = [i + j for i, j in zip(total_precision, p)]
 		total_recall = [i + j for i, j in zip(total_recall, r)]
-		#total_index = total_index + index
+	
+	# normalize values
 	total_precision = [x/len(os.listdir(path)) for x in total_precision]
 	total_recall = [x/len(os.listdir(path)) for x in total_recall]
-	total = zip(total_precision, total_recall)
-	pickle.dump(total, open('save.p', 'wb'))
+	
+	# check if there is already a recal precision dir
+	rp_path = test_path + test_name + "\\" + "rp_eval\\"
+	if not os.path.exists(rp_path):
+		os.makedirs(rp_path)
+		
+	# Pickle files for easy plotting access
+	cPickle.dump(total_precision, open(rp_path + 'precision.p', 'wb'))
+	cPickle.dump(total_recall, open(rp_path + 'recall.p', 'wb'))
 	print total_precision
 	print total_recall
 	
@@ -402,7 +413,7 @@ def relevant_shapes(ranks, number):
 #build_mm_fast("test1")
 #generate_random_testingsets_fast("test1")
 #morphfit_scans("test1")
-cleanup_exe()
-evaluate_results("test1")
+#cleanup_exe()
+#evaluate_results("test1")
 #cleanup_test("test1")
 #full_test("test1")
