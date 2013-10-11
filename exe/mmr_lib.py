@@ -164,7 +164,7 @@ def morphfit_scans (test_name):
 # 3. Evaluate query results
 def evaluate_results(test_name):
 	result_path = test_path + test_name + "\\" + result_folder
-	mean_average_precision(result_path, test_name) 
+	mean_average_rank(result_path, test_name) 
 
 # 1-3. Full test
 def full_test(test_name):
@@ -423,12 +423,30 @@ def average_precision(file, filename):
 def relevant_shapes(ranks, number):
 	matches = 0 
 	for i in ranks:
-		if number in i:
+		if i.startswith(number):
 			matches = matches + 1
 	return matches
 
+def mean_average_rank(path, test_name):
+	q = len(os.listdir(path))
+	total_average_rank = 0
+	for filename in os.listdir(path):
+		f = open(path + filename, 'r')
+		total_average_rank += average_rank(f, filename)
+	mean_average_rank = float(total_average_rank)/q
+	print "Mean average rank: "
+	print mean_average_rank
 	
+def average_rank(file, filename):
+	ranks_str = file.read()
+	ranks = ranks_str.split("\n")
+	correct_ranks = []
+	for i in range(0, len(ranks)):
+		if ranks[i].startswith(filename[0:3]):
+			correct_ranks += [i+1]
+	return sum(correct_ranks)/float(len(correct_ranks))
 	
+
 	
 ## Example plug-in functions
 # Example distance functions
