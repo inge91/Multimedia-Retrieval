@@ -22,7 +22,7 @@ import cPickle
         # Copy files
         # Fit mm
         # Calculate distance
-        # Rank scans
+        # Evalution Functions
 
     ## Example plug-in functions
         # Example distance functions
@@ -164,7 +164,7 @@ def morphfit_scans (test_name):
 # 3. Evaluate query results
 def evaluate_results(test_name):
 	result_path = test_path + test_name + "\\" + result_folder
-	recall_precision_evaluation(result_path, test_name) 
+	mean_average_precision(result_path, test_name) 
 
 # 1-3. Full test
 def full_test(test_name):
@@ -172,8 +172,6 @@ def full_test(test_name):
 	generate_random_testingsets_fast (test_name)
 	morphfit_scans (test_name)
 	evaluate_results(test_name)
-
-
 
 ## Utility functions
 
@@ -320,8 +318,7 @@ def get_random_scans (amount, excluded_list, escan_only = False):
 
     return selected_scans
 
-    
-# Rank scans
+# Evaluation Functions #    
 # lat_rank_evaluation evaluates all files in a directory using last_rank
 def last_rank_evaluation(path):
 	total_index = 0
@@ -392,8 +389,35 @@ def recall_precision(file, number):
 		m = relevant_shapes(ranks, number)
 		recalls[i] = float(r) / m	
 	return precisions, recalls
-	
 
+# Mean Average Precision #
+# For each query result calculate the average precision and normalize 
+# by query set size
+# A value of 1 means a perfect performance by the mm (all matching masks are the first to be retrieved)
+def mean_average_precision(path, test_name):
+	q = len(os.listdir(path))
+	total_average_precision = 0
+	for filename in os.listdir(path):
+		f = open(path + filename, 'r')
+		total_average_precision += average_precision(f, filename)
+	mean_average_precision = float(total_average_precision)/q
+	print "Mean average precision: "
+	print mean_average_precision
+	
+# Average Precision #
+# calculate precision of query result
+# at each position of the rank 
+def average_precision(file, filename):
+	average_precision = 0
+	p, r = recall_precision(file, filename[0:3])
+	for i in range(0, len(p)):
+		if i > 0:
+			diff_r = r[i] - r[i-1]
+		else:
+			diff_r = r[i]
+		average_precision += p[i] * diff_r
+	return average_precision
+	
 # returns the amount of elements in the list that
 # match the term number 
 def relevant_shapes(ranks, number):
@@ -402,7 +426,8 @@ def relevant_shapes(ranks, number):
 		if number in i:
 			matches = matches + 1
 	return matches
-		
+
+	
 	
 	
 ## Example plug-in functions
@@ -414,6 +439,6 @@ def relevant_shapes(ranks, number):
 #generate_random_testingsets_fast("test1")
 #morphfit_scans("test1")
 #cleanup_exe()
-#evaluate_results("test1")
+evaluate_results("test1")
 #cleanup_test("test1")
 #full_test("test1")
