@@ -434,6 +434,10 @@ def mean_average_rank(path, test_name):
 		f = open(path + filename, 'r')
 		total_average_rank += average_rank(f, filename)
 	mean_average_rank = float(total_average_rank)/q
+	mar_path = test_path + test_name + "\\" + "mar_eval\\"
+	if not os.path.exists(mar_path):
+		os.makedirs(mar_path)
+	cPickle.dump(mean_average_rank, open(mar_path + 'mean_average_rank.p', 'wb'))
 	print "Mean average rank: "
 	print mean_average_rank
 	
