@@ -48,7 +48,7 @@ result_folder = "Results\\"
 # Training set = first n picza's
 n = 30
 query_size = 5
-test_size = 25
+#test_size = 20
 
 ###
 
@@ -56,11 +56,8 @@ test_size = 25
 ## Big functions
 
 # 1. Build mm #
-# Fast, mostly hardcoded function to build a morphable model from a list of face numbers.
-# Uses the constants, makes a MM out of the first n faces.
-def build_mm_fast (test_name):
-    # TODO: remove 'first n faces' hardcoding
-    training_set = range(477, 477 + n)
+# Builds a mm of the trainingset of facenumbers
+def build_mm (test_name, training_set):
     facecor_path = test_path + test_name + "\\" + facecor_folder
     
     # Check if the path exists
@@ -88,21 +85,26 @@ def build_mm_fast (test_name):
     command = "mmbuild " + mm_path
     print "Executing", command
     os.system(command)
-
+    
+# Fast, mostly hardcoded function to build a morphable model.
+# Uses the constants, makes a MM out of the first n faces.
+def build_mm_fast (test_name):
+    build_mm(test_name, range(477, 477 + n))
 
 # (*1.5 Generate random query- and testset*)
-# Fast version that assumes a MM consisting of the first n faces,
-#   and hardcoded (at the top) sizes for query and testset.
-def generate_random_testingsets_fast (test_name):
+# Prepares a randomized queryset and testset in the right folders.
+# The size is based on query_amount, with the testset size being based on the query set.
+# Currently, none of the trainingset FACES is included in the queryset (is this good or bad?)
+def generate_random_testingsets (test_name, query_amount, training_set):
     print "Generating random query and testset for test", test_name
+    
+    training_list_str = [str(num) for num in training_set]
 
-    # TODO: remove 'first n faces' hardcoding
-    training_list_str = [str(num) for num in range(477, 477 + n)]
-
-    # Make a query and testset of the default size,
-    # queryset containing only Escans (as per example in the pdf).
-    query_scans = get_random_scans(query_size, training_list_str, True)
-    test_scans = get_random_scans(test_size, query_scans + training_list_str, False)    
+    # Make a query- and matching testset,
+    # queryset containing only Escans (as per example in the pdf),
+    # and consisting of even amounts of all Escan versions
+    query_scans = get_random_scans(query_amount, training_list_str, True, True)
+    test_scans = get_matching_testset(query_scans)   
 
     # Copy the sets to the right place
     # TODO: maybe try to make it work without copying, because the file sizes are not small
@@ -116,6 +118,10 @@ def generate_random_testingsets_fast (test_name):
         os.makedirs(testset_path)
     copy_files_filter(posenorm_path, testset_path, test_scans)     
     
+
+# Fast version that assumes a MM consisting of the first n faces, and hardcoded size.
+def generate_random_testingsets_fast (test_name):
+    generate_random_testingsets (test_name, query_size, range(477, 477 + n))
 
 # 2. Query the scans
 # Applies morphfit using the existing data.bin file on both the query set and the test set
@@ -167,11 +173,18 @@ def evaluate_results(test_name):
 	mean_average_rank(result_path, test_name) 
 
 # 1-3. Full test
-def full_test(test_name):
-	build_mm_fast (test_name)
-	generate_random_testingsets_fast (test_name)
-	morphfit_scans (test_name)
-	evaluate_results(test_name)
+def full_test(test_name, training_set, query_amount):
+    build_mm (test_name, training_set)
+    generate_random_testingsets (test_name, query_amount, training_set)
+    morphfit_scans (test_name)
+    evaluate_results(test_name)
+
+# Uses the hardcoded functions
+def full_test_fast (test_name):
+    build_mm_fast (test_name)
+    generate_random_testingsets_fast (test_name)
+    morphfit_scans (test_name)
+    evaluate_results(test_name)
 
 ## Utility functions
 
@@ -292,7 +305,10 @@ def file_to_list(f):
 # Return a list of size amount of randomized scan strings (e.g. ["477a", "506_picza"]).
 # The scans strings in excluded_list are not chosen.
 # A maximum of one scan per face will be picked (never "477a" and "477b").
-def get_random_scans (amount, excluded_list, escan_only = False):
+# Setting evenly_distributed = True will return an equal amount of "a", "b", "_picza", etc. type scans.
+#   WARNING: evenly_distributed is currently NOT guaranteed to work if specific scan strings are in excluded_set
+#     (as opposed to only plain face numbers)
+def get_random_scans (amount, excluded_list, escan_only = False, evenly_distributed = False):
     excluded_set = set(excluded_list)
     # Take a random sample from all face numbers MINUS the training_set
     # Strings are used, because e.g. scan "477b" could be excluded.
@@ -301,22 +317,50 @@ def get_random_scans (amount, excluded_list, escan_only = False):
     selected_faces = random.sample(potential_face_set, min([amount, len(potential_face_set)]))
 
     # Take one random scan per selected face
-    scan_choices = set(["a","b","c","d","e"])
+    scan_choices = ["a","b","c","d","e"]
     if not escan_only:
-        scan_choices.add("_picza")
-
+        scan_choices.append("_picza")
+    if not evenly_distributed:
+        scan_choices = set(scan_choices)
+    
     selected_scans = []
+    iteration = 0
     for face in selected_faces:
-        # Make sure that an excluded scan can not be picked
-        potential_scans = set([(face + s) for s in scan_choices]) - excluded_set
-        
-        # It should never happen that all scans of a face have been used
-        # (or else this code should be changed)
-        if len(potential_scans) == 0: print "[ERROR] All scans for face", face, "have been excluded!"
-        
-        selected_scans.append(random.sample(potential_scans, 1)[0])
+        # For an 'evenly distributed' set, iterate over the scan types instead of randomizing
+        if evenly_distributed:
+            chosen_scan = face + scan_choices[iteration % len(scan_choices)]
+            if chosen_scan in excluded_set:
+                print "[ERROR] Simple evenly_distributed implementation crashed, because chosen scan is in excluded list"
+            else:
+                selected_scans.append(chosen_scan)
+            
+        else:
+            # Make sure that an excluded scan can not be picked
+            potential_scans = set([(face + s) for s in scan_choices]) - excluded_set
+            
+            # It should never happen that all scans of a face have been used
+            # (or else this code should be changed)
+            if len(potential_scans) == 0: print "[ERROR] All scans for face", face, "have been excluded!"
+            
+            selected_scans.append(random.sample(potential_scans, 1)[0])
+            
+        iteration += 1
 
     return selected_scans
+
+# Returns a testset consisting of all scans of the faces in queryset,
+# but with actual scans that are in the query- or trainingset.
+def get_matching_testset (queryset):
+    testset = []
+    for query_scan in queryset:
+        if "_picza" in query_scan:
+            query_face = query_scan[:-6]
+        else:
+            query_face = query_scan[:-1]
+        for suffix in ["a","b","c","d","e", "_picza"]:
+            testset.append(query_face + suffix)
+            
+    return list(set(testset) - set(queryset))
 
 # Evaluation Functions #    
 # lat_rank_evaluation evaluates all files in a directory using last_rank
@@ -451,16 +495,18 @@ def average_rank(file, filename):
 	return sum(correct_ranks)/float(len(correct_ranks))
 	
 
-	
-## Example plug-in functions
-# Example distance functions
-# Example evaluation functions
 
 
 #build_mm_fast("test1")
 #generate_random_testingsets_fast("test1")
 #morphfit_scans("test1")
 #cleanup_exe()
-evaluate_results("test1")
+#evaluate_results("test1")
 #cleanup_test("test1")
-#full_test("test1")
+    
+full_test("FT2", range(550, 581), 5)
+#full_test_fast("FTfast3")
+
+# TIME (Tim PC) - full_test_fast:
+# facecor + mm (mostly facecor) -> 1 min =~                                       2 sec * |trainingset|
+# the rest (mostly morphfit) -> 1:32     =~ 3.07 sec * (|queryset| + |testset|) = 18.4 sec * |queryset|
