@@ -35,6 +35,7 @@ scan_path = mmr_path + "scans\\"
 posenorm_path = scan_path + "All Pose Normalized\\"
 handnorm_path = scan_path + "PICZA Hand-Normalized\\"
 landmark_path = scan_path + "PICZA Landmarks Namechange\\"
+mirror_path = scan_path + "Mirrored\\"
 facecor_path = scan_path + "Facecorresponded\\"
 # This is where each new morphable model and it's results will be placed
 test_path = mmr_path + "tests\\"
@@ -139,12 +140,13 @@ def generate_random_testingsets (test_name, query_amount, training_set):
     query_path = test_path + test_name + "\\" + query_folder
     if not os.path.exists(query_path):
         os.makedirs(query_path)
-    copy_files_filter(posenorm_path, query_path, query_scans)
+    copy_files_filter(mirror_path, query_path, query_scans)
     
     testset_path = test_path + test_name + "\\" + test_folder
     if not os.path.exists(testset_path):
         os.makedirs(testset_path)
-    copy_files_filter(posenorm_path, testset_path, test_scans)     
+	# use mirrored data  
+    copy_files_filter(mirror_path, testset_path, test_scans)     
     
 
 # Fast version that assumes a MM consisting of the first n faces, and hardcoded size.
@@ -531,7 +533,7 @@ cleanup_exe()
 #evaluate_results("test1")
 #cleanup_test("test1")    
 
-full_test_fast("FTfast3")
+full_test_fast("FTfast4")
 '''
 for size in range(5, 125, 5):
     full_test("First_" + str(size), range(477, size + 1), 10)
