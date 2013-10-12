@@ -35,6 +35,7 @@ scan_path = mmr_path + "scans\\"
 posenorm_path = scan_path + "All Pose Normalized\\"
 handnorm_path = scan_path + "PICZA Hand-Normalized\\"
 landmark_path = scan_path + "PICZA Landmarks Namechange\\"
+facecor_path = scan_path + "Facecorresponded\\"
 # This is where each new morphable model and it's results will be placed
 test_path = mmr_path + "tests\\"
 # Below are the folders within each test folder
@@ -55,9 +56,33 @@ query_size = 5
 
 ## Big functions
 
+# (0.)*  You only have to do this ONCE for the entire project #
+# Calculates the facecorrespondence for all scans that could be in the trainingset,
+#   this saves a lot of time, because facecorrespondence is one of the bottlenecks.
+def precalc_facecor():
+    facecor_path = scan_path + "Facecorresponded\\"
+        
+    # Check if the path exists
+    if not os.path.exists(facecor_path):
+        os.makedirs(facecor_path)
+
+    # Copy the faces to be used in the MM
+    copy_files_filter(handnorm_path, facecor_path, range(477,608))
+    # Also copy the landmarks
+    copy_files_filter(landmark_path, facecor_path, range(477,608))
+
+    # Use facecorrespondence.exe
+    command = "facecorrespondence " + facecor_path
+    print "Executing", command
+    os.system(command)
+
+    cleanup_filter(facecor_path, ["sel4"])
+  
+
 # 1. Build mm #
 # Builds a mm of the trainingset of facenumbers
 def build_mm (test_name, training_set):
+    '''
     facecor_path = test_path + test_name + "\\" + facecor_folder
     
     # Check if the path exists
@@ -73,14 +98,17 @@ def build_mm (test_name, training_set):
     command = "facecorrespondence " + facecor_path
     print "Executing", command
     os.system(command)
-
+    '''
+    # Assumption: precalc_facecor has been run before
     # Make mm directory and copy sel4 files
     mm_path = test_path + test_name + "\\" + mm_folder
     if not os.path.exists(mm_path):
         os.makedirs(mm_path)
      
-    copy_files_filter(facecor_path, mm_path, ["sel4"])
-
+    # the sel4 files (but not mirrsel4 files) still have to be copied.
+    mm_path = test_path + test_name + "\\" + mm_folder
+    copy_files_filter(facecor_path, mm_path, [str(face) + "_piczaNormalized_sel4" for face in training_set])
+    
     # Use mmbuild.exe
     command = "mmbuild " + mm_path
     print "Executing", command
@@ -497,15 +525,20 @@ def average_rank(file, filename):
 
 
 
-#build_mm_fast("test1")
 #generate_random_testingsets_fast("test1")
 #morphfit_scans("test1")
-#cleanup_exe()
+cleanup_exe()
 #evaluate_results("test1")
-#cleanup_test("test1")
-    
-full_test("FT2", range(550, 581), 5)
+#cleanup_test("test1")    
+
 #full_test_fast("FTfast3")
+'''
+for size in range(5, 125, 5):
+    full_test("First_" + str(size), range(477, size + 1), 10)
+    '''  
+
+#precalc_facecor();
+#full_test("FullTest550-580_5", range(550, 581), 5)
 
 # TIME (Tim PC) - full_test_fast:
 # facecor + mm (mostly facecor) -> 1 min =~                                       2 sec * |trainingset|
