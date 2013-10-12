@@ -531,7 +531,7 @@ cleanup_exe()
 #evaluate_results("test1")
 #cleanup_test("test1")    
 
-#full_test_fast("FTfast3")
+full_test_fast("FTfast3")
 '''
 for size in range(5, 125, 5):
     full_test("First_" + str(size), range(477, size + 1), 10)
