@@ -204,7 +204,7 @@ def morphfit_scans (test_name):
             continue
         f = open(query_path + filename, 'r')
         print 'Calculating distance to test set for file: ' + filename 
-        evaluate_distances(f, testset_path, result_path)
+        evaluate_distances(f, testset_path, result_path, test_name)
 
 # 3. Evaluate query results
 def evaluate_results(test_name):
@@ -444,7 +444,7 @@ def move_files_filter (from_dir, to_dir, filter_list):
                 
   # Evaluate distances #
  # Evaluates the distance between a single query files and all test files
-def evaluate_distances(q_file, test_path, result_path):
+def evaluate_distances(q_file, test_path, result_path, test_name):
     q_vector = file_to_list(q_file)
     name = q_file.name[-28:-25]
 
@@ -460,7 +460,7 @@ def evaluate_distances(q_file, test_path, result_path):
             continue
         t_file = open(test_path + filename, 'r')
         t_vector = file_to_list(t_file)
-        dist = calc_euclidian_weighted_distance(q_vector, t_vector)
+        dist = calc_euclidian_weighted_distance(q_vector, t_vector, test_name)
         distances = distances + [(filename, dist)]
     # Sort the distances
     distances = sorted(distances,key=lambda x: x[1])
@@ -484,16 +484,34 @@ def calc_euclidian_distance(q_vec, s_vec):
         cumulative = cumulative + (x - y)**2
     return math.sqrt(cumulative)
 	
-def calc_euclidian_weighted_distance(q_vec, s_vec):
+def calc_euclidian_weighted_distance(q_vec, s_vec, test_name):
 	cumulative = 0
+	# find weights
+	weights = find_weights(test_name)
+	print len(q_vec)
 	for i in range(0, len(q_vec)):
 		x = q_vec[i]
 		y = s_vec[i]
-		w = (1.0 / (i+1))
+		w = weights[i] 					#OLD WEIGHT DISTRIBUTION (1.0 / (i+1))
 		cumulative = cumulative + w *(x - y)**2
 	return math.sqrt(cumulative)	
 	
-
+def find_weights(test_name):
+	# the file in which the weights are written
+	mm_build = test_path + test_name + "\\" + mm_folder + "mmbuild.txt"
+	f = open(mm_build, "r")
+	f_complete = f.read()
+	lines = f_complete.split("\n")
+	# The third lines consists of the sigma values
+	sigma_line = lines[2]
+	#split the sigmas on tab values
+	sigmas = sigma_line.split("\t")
+	# make the values of the list consist of floats instead of string
+	# exclude last one, as it is an empty string
+	sigma_values = [float(i) for i in sigmas[:-1]]
+	sigma_values += [0] * (99 - (n - 1))
+	return sigma_values
+	
 # File to list #
 # read in a file descriptor and return a list
 def file_to_list(f):
@@ -712,6 +730,7 @@ def average_rank(file, filename):
 #cleanup_test("test1")    
 #evolutionary_algorithm()
 #full_test_fast("FTfast4")
+full_test("sigma_test", range(477, 477 + n), 2)
 '''
 for size in range(5, 125, 5):
     full_test("First_" + str(size), range(477, size + 1), 10)
