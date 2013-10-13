@@ -263,7 +263,7 @@ def evolutionary_algorithm():
 
 		# Create the new morphable models of the children
 		for child in new_offspring:
-			full_test(test_name + str(i), child, 2)
+			full_test(test_name + str(i), child, 10)
 			children_population += [i]
 			i += 1
 		
@@ -276,12 +276,30 @@ def evolutionary_algorithm():
 		sorted_population += children_zipped
 		sorted_population.sort(key=lambda x: x[1], reverse = True)
 		sorted_population = sorted_population[0:no_population]
+		
+		# Remove all directories that no longer belong to the population
+		# For space efficiency
+		remove_dead(test_name, sorted_population)
+		
 		iteration += 1
 		
 		# Some much needed cleanup of the exe directory
 		cleanup_exe()
 	print "Found best possible morphable model: ",
 	print test_name + sorted_population[0][0]
+
+# Removes all dead directories to save space
+def remove_dead(filename, alive):
+	for i in os.listdir(test_path):
+		if filename in i:
+			lives = 0
+			for n in alive:
+				if str(n) in i:
+					lives = 1
+					break
+			if not lives:
+				shutil.rmtree(test_path + i + "\\")
+			
 
 # Create offspring #
 # Create offspring given t
@@ -692,7 +710,7 @@ def average_rank(file, filename):
 #cleanup_exe()
 #evaluate_results("FTfast3")
 #cleanup_test("test1")    
-evolutionary_algorithm()
+#evolutionary_algorithm()
 #full_test_fast("FTfast4")
 '''
 for size in range(5, 125, 5):
