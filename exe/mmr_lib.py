@@ -7,6 +7,7 @@ import shutil
 import math
 import random
 import cPickle
+import sys
 ###  Contents
     ## Big functions
 
@@ -51,6 +52,14 @@ result_folder = "Results\\"
 n = 30
 query_size = 5
 #test_size = 20
+
+# Evolutionary algorithm 
+no_parents = 2
+no_population = 30
+no_mutation = 5
+no_children = no_parents * 5
+max_iter = 9999
+no_first_generation = 15
 
 ###
 
@@ -216,6 +225,149 @@ def full_test_fast (test_name):
     morphfit_scans (test_name)
     evaluate_results(test_name)
 
+# Evolutionary Algorithm #
+# The evolutionary algorithm tries to find the best possible mask by 
+# combining well performing parents to create new children masks
+# keep top 30
+# how many parents?
+# how much mutation?
+def evolutionary_algorithm():	
+	test_name = "evolution"
+	iteration = 0
+	
+	# Generation 0: create n random morphable models
+	for i in range(1, no_first_generation):
+		# choose random numbers
+		cleanup_exe()		
+		full_test(test_name + str(i), random.sample(xrange(477, 608), 30), 10)
+		
+	# create a list that contains current population
+	i = no_first_generation
+	
+	current_population = range(1,i)
+	#retrieves the fitness of current population 
+	current_fitness = retrieve_fitness(current_population, test_name)
+	# sorts the population, best fitness in the front, and worst in the back
+	sorted_population = zip(current_population, current_fitness)
+	sorted_population.sort(key=lambda x: x[1], reverse = True)
+	
+	# Stop condition: if not yet in the right error range or
+	# The amount of iteratins has not yet ended
+	# The optimal possible rank is 
+	while(sorted_population[0][1] < 1/3.0 and iteration <  max_iter):
+		# The children are created by choosing the parents
+		# and mixing them together(with a little mutation)
+		new_offspring = create_offspring(sorted_population, test_name)
+	
+		children_population = [] 
+
+		# Create the new morphable models of the children
+		for child in new_offspring:
+			full_test(test_name + str(i), child, 2)
+			children_population += [i]
+			i += 1
+		
+		# Get fitness of children
+		children_fitness = retrieve_fitness(current_population, test_name)
+		children_zipped = zip(children_population, children_fitness)
+		
+		# Add children to current population and remove all beings
+		# above desired population size
+		sorted_population += children_zipped
+		sorted_population.sort(key=lambda x: x[1], reverse = True)
+		sorted_population = sorted_population[0:no_population]
+		iteration += 1
+		
+		# Some much needed cleanup of the exe directory
+		cleanup_exe()
+	print "Found best possible morphable model: ",
+	print test_name + sorted_population[0][0]
+
+# Create offspring #
+# Create offspring given t
+def create_offspring(population, test_name):
+	# TODO: make parent choice depend on some random variable * fitness
+	parents = population[0:no_parents]
+	offspring = []	
+	# For all combination of parents create 
+	# children
+	previous = [] 
+	for p1 in parents:
+		for p2 in parents:
+			if (p1 == p2) or (p2 in previous):
+				continue
+			# Create a specific number of children for each parent couple
+			for i in range(0, no_children/len(parents)):
+				offspring += [create_child(p1[0], p2[0], test_name)]
+			previous += [p1] 
+	return offspring
+
+# Creates a new child, consisting of parental scans and a specific mutated
+# amound	
+def create_child(p1, p2, test_name):
+	child_mm = []
+	# Find out for each parents what scans were used in mmbuild
+	p1_l = find_mm_scans(test_name + str(p1))
+	p2_l = find_mm_scans(test_name + str(p2))
+	mutation = range(477, 608)
+	
+	## The devision of the child 
+	## FIXME: Possible choice how much each 
+	# parent influences child? 
+	devision = n - no_mutation
+	p1_n = int(math.ceil(devision / 2.0))
+	p2_n = n - p1_n - no_mutation
+	
+	#filling the chils morphable model list
+	add_elements(p1_l, p1_n, child_mm)
+	add_elements(p2_l, p2_n, child_mm)
+	add_elements(mutation, no_mutation, child_mm)
+	return child_mm
+	
+# Adds element from the random list to add_to_list
+# without adding double values
+def add_elements(random_list, n, add_to_list):
+	selected_elements = [] 
+	for i in range(0, n):
+		new_scan = random.choice(random_list)
+		while(new_scan in add_to_list):
+			new_scan = random.choice(random_list)
+		selected_elements += [new_scan]
+		add_to_list += [new_scan]
+	return selected_elements
+	
+# find_mm_scans
+# returns numbers of the scans with which the morphable model was made for given dir
+def find_mm_scans(test_name):
+	mm_path = test_path + test_name + "\\" + mm_folder
+	mm_list = []
+	# loop through all files
+	for filename in os.listdir(mm_path):
+		# if a file end with ply and begins with a number
+		# add the number to the mm list
+		if(filename.endswith(".ply")):
+			if filename[0].isdigit():
+				mm_list += [int(filename[0:3])]
+	return mm_list
+	
+# Utility function
+# retrieve fitness 
+# returns the fitness for a list of candidates
+def retrieve_fitness(candidates, test_name):
+	ranks = []
+	for candidate in candidates:
+		path = test_path + test_name + str(candidate) + "\\" + "mar_eval\\"
+		# In case the path does not exist exit, as there is something wrong
+		if not os.path.exists(path):
+			print "ERROR: Fitness function could not be calculated as"
+			print  path,
+			print  "is missing.. Exiting"
+			sys.exit(1)
+		# return the rank from the pickle
+		r = cPickle.load(open(path + "mean_average_rank.p"))
+		ranks += [1 / float(r)]
+	return ranks
+	
 ## Utility functions
 
 # Copy files #
@@ -297,6 +449,9 @@ def evaluate_distances(q_file, test_path, result_path):
     for candidate in distances:
         result_file.write("%s: " % candidate[0])
         result_file.write("%f\n" % candidate[1])
+	# Last elements should be written without newline
+	#result_file.write("%s: " % distances[-1][0])
+    #result_file.write("%f" % distances[-1][1])
     result_file.close()
  
  
@@ -501,6 +656,8 @@ def relevant_shapes(ranks, number):
 			matches = matches + 1
 	return matches
 
+	# Calculates the mean average rank for all
+	# query objects belonging to a single test
 def mean_average_rank(path, test_name):
 	q = len(os.listdir(path))
 	total_average_rank = 0
@@ -512,9 +669,12 @@ def mean_average_rank(path, test_name):
 	if not os.path.exists(mar_path):
 		os.makedirs(mar_path)
 	cPickle.dump(mean_average_rank, open(mar_path + 'mean_average_rank.p', 'wb'))
+	f = open(mar_path + 'mean_average_rank.txt', 'wb')
+	f.write(str(mean_average_rank))
 	print "Mean average rank: "
 	print mean_average_rank
-	
+
+# Find the average of a rank in a single query retrieval
 def average_rank(file, filename):
 	ranks_str = file.read()
 	ranks = ranks_str.split("\n")
@@ -529,11 +689,11 @@ def average_rank(file, filename):
 
 #generate_random_testingsets_fast("test1")
 #morphfit_scans("test1")
-cleanup_exe()
-#evaluate_results("test1")
+#cleanup_exe()
+#evaluate_results("FTfast3")
 #cleanup_test("test1")    
-
-full_test_fast("FTfast4")
+evolutionary_algorithm()
+#full_test_fast("FTfast4")
 '''
 for size in range(5, 125, 5):
     full_test("First_" + str(size), range(477, size + 1), 10)
