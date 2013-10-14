@@ -59,7 +59,7 @@ no_population = 15
 no_mutation = 5
 no_children = no_parents * 5
 max_iter = 9999
-no_first_generation = 2
+no_first_generation = 15
 
 ###
 
@@ -239,7 +239,7 @@ def evolutionary_algorithm():
 	for i in range(0, no_first_generation):
 		# choose random numbers
 		cleanup_exe()		
-		full_test(test_name + str(i), random.sample(xrange(477, 608), 30), 2)
+		full_test(test_name + str(i), random.sample(xrange(477, 608), 30), 10)
 		
 	# create a list that contains current population
 	i = no_first_generation
@@ -264,30 +264,24 @@ def evolutionary_algorithm():
 
 		# Create the new morphable models of the children
 		for child in new_offspring:
-			full_test(test_name + str(i), child, 2)
+			full_test(test_name + str(i), child, 10)
 			children_population += [i]
 			i += 1
 		
 		# Get fitness of children
 		children_fitness = retrieve_fitness(children_population, test_name)
 		children_zipped = zip(children_population, children_fitness)
-		print "current population ",
-		print sorted_population
-		print "children_zipped ",
-		print children_zipped
+	
 		# Add children to current population and remove all beings
 		# above desired population size
 		sorted_population += children_zipped
-		print "population before sorting ", 
-		print sorted_population
+		
 		sorted_population.sort(key=lambda x: x[1], reverse = True)
 		sorted_population = sorted_population[0:no_population]
-		print sorted_population
 		
 		# Remove all directories that no longer belong to the population
 		# For space efficiency
 		remove_dead(test_name, sorted_population)
-		sys.exit(0)
 		iteration += 1
 		
 		# Some much needed cleanup of the exe directory
