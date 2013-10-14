@@ -55,11 +55,11 @@ query_size = 5
 
 # Evolutionary algorithm 
 no_parents = 2
-no_population = 30
+no_population = 15
 no_mutation = 5
 no_children = no_parents * 5
 max_iter = 9999
-no_first_generation = 15
+no_first_generation = 2
 
 ###
 
@@ -236,15 +236,15 @@ def evolutionary_algorithm():
 	iteration = 0
 	
 	# Generation 0: create n random morphable models
-	for i in range(1, no_first_generation):
+	for i in range(0, no_first_generation):
 		# choose random numbers
 		cleanup_exe()		
-		full_test(test_name + str(i), random.sample(xrange(477, 608), 30), 10)
+		full_test(test_name + str(i), random.sample(xrange(477, 608), 30), 2)
 		
 	# create a list that contains current population
 	i = no_first_generation
 	
-	current_population = range(1,i)
+	current_population = range(0,i)
 	#retrieves the fitness of current population 
 	current_fitness = retrieve_fitness(current_population, test_name)
 	# sorts the population, best fitness in the front, and worst in the back
@@ -254,7 +254,8 @@ def evolutionary_algorithm():
 	# Stop condition: if not yet in the right error range or
 	# The amount of iteratins has not yet ended
 	# The optimal possible rank is 
-	while(sorted_population[0][1] < 1/3.0 and iteration <  max_iter):
+	#while( if sorted_population[0][0] < 1/3.0 or iteration < 9999):
+	while(True):
 		# The children are created by choosing the parents
 		# and mixing them together(with a little mutation)
 		new_offspring = create_offspring(sorted_population, test_name)
@@ -263,30 +264,36 @@ def evolutionary_algorithm():
 
 		# Create the new morphable models of the children
 		for child in new_offspring:
-			full_test(test_name + str(i), child, 10)
+			full_test(test_name + str(i), child, 2)
 			children_population += [i]
 			i += 1
 		
 		# Get fitness of children
-		children_fitness = retrieve_fitness(current_population, test_name)
+		children_fitness = retrieve_fitness(children_population, test_name)
 		children_zipped = zip(children_population, children_fitness)
-		
+		print "current population ",
+		print sorted_population
+		print "children_zipped ",
+		print children_zipped
 		# Add children to current population and remove all beings
 		# above desired population size
 		sorted_population += children_zipped
+		print "population before sorting ", 
+		print sorted_population
 		sorted_population.sort(key=lambda x: x[1], reverse = True)
 		sorted_population = sorted_population[0:no_population]
+		print sorted_population
 		
 		# Remove all directories that no longer belong to the population
 		# For space efficiency
 		remove_dead(test_name, sorted_population)
-		
+		sys.exit(0)
 		iteration += 1
 		
 		# Some much needed cleanup of the exe directory
 		cleanup_exe()
 	print "Found best possible morphable model: ",
-	print test_name + sorted_population[0][0]
+	print test_name + str(sorted_population[0][0])
 
 # Removes all dead directories to save space
 def remove_dead(filename, alive):
@@ -294,7 +301,7 @@ def remove_dead(filename, alive):
 		if filename in i:
 			lives = 0
 			for n in alive:
-				if str(n) in i:
+				if str(n[0]) in i:
 					lives = 1
 					break
 			if not lives:
@@ -728,9 +735,9 @@ def average_rank(file, filename):
 #cleanup_exe()
 #evaluate_results("FTfast3")
 #cleanup_test("test1")    
-#evolutionary_algorithm()
+evolutionary_algorithm()
 #full_test_fast("FTfast4")
-full_test("sigma_test", range(477, 477 + n), 2)
+#full_test("sigma_test", range(477, 477 + n), 2)
 '''
 for size in range(5, 125, 5):
     full_test("First_" + str(size), range(477, size + 1), 10)
