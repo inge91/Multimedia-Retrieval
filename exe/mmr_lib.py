@@ -520,32 +520,34 @@ def move_files_filter (from_dir, to_dir, filter_list):
   # Evaluate distances #
  # Evaluates the distance between a single query files and all test files
 def evaluate_distances(q_file, test_path, result_path, test_name):
-    q_vector = file_to_list(q_file)
-    name = q_file.name[-28:-25]
+	q_vector = file_to_list(q_file)
+
+	basename = os.path.basename(q_file.name)
+	name = basename[0:3]
 
     # create file containing ordered list of file rankings
-    result_file = open(result_path + name + '.txt', 'w+')
+	result_file = open(result_path + name + '.txt', 'w+')
     
     #list of distances
-    distances = []
+	distances = []
     
-    for filename in os.listdir(test_path):
-        # make sure the file is a .params
-        if not ("final.params" in filename) :
-            continue
-        t_file = open(test_path + filename, 'r')
-        t_vector = file_to_list(t_file)
-        dist = calc_euclidian_weighted_distance(q_vector, t_vector, test_name)
-        distances = distances + [(filename, dist)]
+	for filename in os.listdir(test_path):
+	# make sure the file is a .params
+		if not ("final.params" in filename) :
+			continue	
+		t_file = open(test_path + filename, 'r')
+		t_vector = file_to_list(t_file)
+		dist = calc_euclidian_weighted_distance(q_vector, t_vector, test_name)
+		distances = distances + [(filename, dist)]
     # Sort the distances
-    distances = sorted(distances,key=lambda x: x[1])
-    for candidate in distances:
-        result_file.write("%s: " % candidate[0])
-        result_file.write("%f\n" % candidate[1])
+	distances = sorted(distances,key=lambda x: x[1])
+	for candidate in distances:
+		result_file.write("%s: " % candidate[0])
+		result_file.write("%f\n" % candidate[1])
 	# Last elements should be written without newline
 	#result_file.write("%s: " % distances[-1][0])
     #result_file.write("%f" % distances[-1][1])
-    result_file.close()
+	result_file.close()
  
  
 # Fit mm
