@@ -8,6 +8,7 @@ import math
 import random
 import cPickle
 import sys
+import subprocess
 ###  Contents
     ## Big functions
 
@@ -50,6 +51,8 @@ result_folder = "Results\\"
 # Default set settings
 # Training set = first n picza's
 n = 30
+# Run in the background (hiding the commandwindow)?
+run_in_background = True
 
 #test_size = 20
 
@@ -58,10 +61,10 @@ no_parents = 2
 no_population = 10
 no_mutation = 5
 no_children = 5
-mm_size = 41
+mm_size = 30
 max_iter = 9999
 no_first_generation = 5
-query_size = 5
+query_size = 10
 ###
 
 
@@ -83,9 +86,7 @@ def precalc_facecor():
     copy_files_filter(landmark_path, facecor_path, range(477,608))
 
     # Use facecorrespondence.exe
-    command = "facecorrespondence " + facecor_path
-    print "Executing", command
-    os.system(command)
+    execute("facecorrespondence " + facecor_path)
 
     cleanup_filter(facecor_path, ["sel4"])
   
@@ -93,23 +94,6 @@ def precalc_facecor():
 # 1. Build mm #
 # Builds a mm of the trainingset of facenumbers
 def build_mm (test_name, training_set):
-    '''
-    facecor_path = test_path + test_name + "\\" + facecor_folder
-    
-    # Check if the path exists
-    if not os.path.exists(facecor_path):
-        os.makedirs(facecor_path)
-    
-    # Copy the faces to be used in the MM
-    copy_files_filter(handnorm_path, facecor_path, training_set)
-    # Also copy the landmarks
-    copy_files_filter(landmark_path, facecor_path, training_set)
-
-    # Use facecorrespondence.exe
-    command = "facecorrespondence " + facecor_path
-    print "Executing", command
-    os.system(command)
-    '''
     # Assumption: precalc_facecor has been run before
     # Make mm directory and copy sel4 files
     mm_path = test_path + test_name + "\\" + mm_folder
@@ -121,9 +105,8 @@ def build_mm (test_name, training_set):
     copy_files_filter(facecor_path, mm_path, [str(face) + "_piczaNormalized_sel4" for face in training_set])
     
     # Use mmbuild.exe
-    command = "mmbuild " + mm_path
-    print "Executing", command
-    os.system(command)
+    execute("mmbuild " + mm_path)
+
     
 # Fast, mostly hardcoded function to build a morphable model.
 # Uses the constants, makes a MM out of the first n faces.
@@ -186,17 +169,13 @@ def morphfit_scans (test_name, mm_size):
     principal_components = str(mm_size - 1)
     
     # Apply morphfit to the  query set
-    command = "morphfit " + query_path + " 1 " + mm_path + " " + principal_components
-    print "Executing", command
-    os.system(command)
+    execute("morphfit " + query_path + " 1 " + mm_path + " " + principal_components)
     
     # Move *_final.params to Query directory
     move_files_filter(".\\", query_path, ["final.params"])
     
     # Apply morphfit to the  test set
-    command = "morphfit " + testset_path + " 1 " + mm_path + " " + principal_components
-    print "Executing", command
-    os.system(command)
+    execute("morphfit " + testset_path + " 1 " + mm_path + " " + principal_components)
     
     # Move *_final.params to Test directory
     move_files_filter(".\\", testset_path, ["final.params"])
@@ -842,7 +821,13 @@ def print_list(f, text, list):
 	for i in list:
 		f.write(str(i))		
 		f.write(", ")
-	f.write("]")		
+	f.write("]")
+
+# Execute a system command
+def execute(command):
+    print "Executing", command
+    ret = subprocess.call(command, shell=run_in_background)
+
 
 
 #precalc_facecor();
@@ -851,7 +836,7 @@ def print_list(f, text, list):
 #full_test("sigma_test", range(477, 477 + n), 2)
 
 
-evolutionary_algorithm("Evol7")
+evolutionary_algorithm("Evoltest1")
 
 
 # TIME (Tim PC) - full_test_fast:
