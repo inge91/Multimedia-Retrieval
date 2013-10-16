@@ -228,7 +228,6 @@ def evolutionary_algorithm(test_name):
     
     iteration = 0
     generation_path = test_name + "\\" + "generation" + str(iteration) + "\\"
-    # Create file for logging data
     
     # Generation 0: make a current_population from random MM's
     current_population = range(0, no_population)
@@ -293,12 +292,15 @@ def evolutionary_algorithm(test_name):
         # Update the average MAR for the members (and create new ones for the children)
         write_average_mar(current_population, generation_path, generation_path_prev)
         
+        
         # Get fitness of this generation's members
         population_fitness = retrieve_fitness(current_population, generation_path)
-        population_zipped = zip(current_population, current_fitness)
+ 
+        sorted_population = zip(current_population, current_fitness)
+      
         # Determine the final ranking of this generation, to be used by the next generation
-        sorted_population = population_zipped.sort(key=lambda x: x[1], reverse = True)
-
+        sorted_population.sort(key=lambda x: x[1], reverse = True)
+     
         # Writing to log
         log_file = open( mmr_path + "log.txt", "a")
         log_file.write("Generation: " + str(iteration))
@@ -338,13 +340,16 @@ def create_offspring(population, test_name):
     
     # The complete population size
     n = len(population)
+    # Create probability distribution depending on fitness for each
+    # potential parent. Devide by squared fittest candidate
+    prob_set = [int((((x[1]*x[1])/ (population[0][1]*population[0][1]) )) * 100) for x in population]
     
-    choice_set = []
+    choice_set = [] 
     # depending of the fitness for each participant in the population
     # create the probability it should be chosen from a set we use 2**n for most likely
     # and 2 ** 1 for least likely
     for i in range(0, n):
-        choice_set += [i] * (2**(n-i))
+        choice_set += [i] * prob_set[i]
     
     # the set of parents
     parents = [] 
@@ -359,49 +364,54 @@ def create_offspring(population, test_name):
     
     # For all combination of parents create 
     # children
-    previous = [] 
-    for p1 in parents:
-        for p2 in parents:
-            if (p1 == p2) or (p2 in previous):
-                continue
-            # Create a specific number of children for each parent couple
-            for i in range(0, no_children):
-                offspring += [create_child(p1, p2, test_name)]
-            previous += [p1] 
+    #previous = [] 
+    #for p1 in parents:
+    #    for p2 in parents:
+    #        if (p1 == p2) or (p2 in previous):
+    #            continue
+    #        # Create a specific number of children for each parent couple
+    #        for i in range(0, no_children):
+    #            offspring += [create_child(p1, p2, test_name)]
+    #        previous += [p1] 
+    
+    for i in range(0, no_children):
+        offspring.append(create_child(parents, test_name))
+    print offspring
     return offspring, parents
 
 # Creates a new child, consisting of parental scans and a specific mutated
-# amound    
-def create_child(p1, p2, test_name):
+# amount
+def create_child(parents, test_name):
     child_mm = []
+    parent_scan_list = [] 
     # Find out for each parents what scans were used in mmbuild
-    p1_l = find_mm_scans(test_name + str(p1))
-    p2_l = find_mm_scans(test_name + str(p2))
-    mutation = range(477, 608)
-    
+    for i in parents:
+        parent_scan_list.append(find_mm_scans(test_name + str(i)))
+    # The range of the mutation
+    parent_scan_list.append(range(477, 608))
+
     not_mutated = mm_size - no_mutation  
     # Let the probability of p1 and p2 be the same
     # ceil in case the amount is a float and we do
     # not want the mutation to be more prominent
-    p1_amount = int(math.ceil(not_mutated * 0.5))
-    p2_amount = int(math.ceil(not_mutated * 0.5))
+    
+    # Devision of parent probabilities
+    amount = int(math.ceil(not_mutated * 1/float(len(parents))))
     
     #Sequence from which the random generator chooses
-    seq = []
-    seq += [0] * p1_amount
-    seq += [1] * p2_amount
-    seq += [2] * no_mutation
     
+    seq = []
+    for i in range(0, len(parents)):
+        seq += [i] * amount
+        
+    seq += [len(parents)] * no_mutation
+    
+ 
     # Each element has a chance
     # of being from p1, p2 or part of the mutation
     for i in range(0, mm_size):
         r = random.choice(seq)
-        if r == 0:
-            add_elements(p1_l, child_mm)
-        if r == 1:
-            add_elements(p2_l, child_mm)
-        if r == 2:
-            add_elements(mutation, child_mm)
+        add_elements(parent_scan_list[r], child_mm)
     return child_mm
     
 # Adds element from the random list to add_to_list
@@ -831,7 +841,7 @@ def mean_average_rank(path, test_name):
     print mean_average_rank
 
 
-
+    
 # Find the average of a rank in a single query retrieval
 def average_rank(file, filename):
     ranks_str = file.read()
