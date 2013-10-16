@@ -58,7 +58,7 @@ no_parents = 2
 no_population = 10
 no_mutation = 5
 no_children = 5
-mm_size = 30
+mm_size = 41
 max_iter = 9999
 no_first_generation = 5
 
@@ -252,7 +252,7 @@ def evolutionary_algorithm(test_name):
 	for i in range(0, no_first_generation):
 		# choose random numbers
 		cleanup_exe()		
-		full_test(generation_path + str(i) + "\\", random.sample(xrange(477, 608), 30), 2)
+		full_test(generation_path + str(i) + "\\", random.sample(xrange(477, 608), mm_size), 2)
 		
 	# create a list that contains current population
 	i = no_first_generation
@@ -408,7 +408,7 @@ def create_child(p1, p2, test_name):
 	
 	# Each element has a chance
 	# of being from p1, p2 or part of the mutation
-	for i in range(0, 30):
+	for i in range(0, mm_size):
 		r = random.choice(seq)
 		if r == 0:
 			add_elements(p1_l, child_mm)
@@ -849,6 +849,7 @@ def print_list(f, text, list):
 #cleanup_exe()
 #cleanup_test("test1")    
 #full_test("sigma_test", range(477, 477 + n), 2)
+
 
 evolutionary_algorithm("Evol7")
 
