@@ -359,18 +359,19 @@ def create_offspring(population, test_name):
 	# create the probability it should be chosen from a set we use 2**n for most likely
 	# and 2 ** 1 for least likely
 	for i in range(0, n):
-		choice_set += [i] * (2**n-i)
+		choice_set += [i] * (2**(n-i))
 	
 	# the set of parents
 	parents = [] 
 	# now choose all parents 
 	for j in range(0, no_parents):
 		p = random.choice(choice_set)
-		parents += [p]
+		parents += [population[p][0]]
 		# Remove parent that is already used from choise
 		choice_set = filter(lambda v: v != p , choice_set)
 		
 	offspring = []	
+	
 	# For all combination of parents create 
 	# children
 	previous = [] 
