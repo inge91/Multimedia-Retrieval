@@ -50,7 +50,7 @@ result_folder = "Results\\"
 # Default set settings
 # Training set = first n picza's
 n = 30
-query_size = 5
+
 #test_size = 20
 
 # Evolutionary algorithm 
@@ -61,7 +61,7 @@ no_children = 5
 mm_size = 41
 max_iter = 9999
 no_first_generation = 5
-
+query_size = 5
 ###
 
 
@@ -252,7 +252,7 @@ def evolutionary_algorithm(test_name):
 	for i in range(0, no_first_generation):
 		# choose random numbers
 		cleanup_exe()		
-		full_test(generation_path + str(i) + "\\", random.sample(xrange(477, 608), mm_size), 2)
+		full_test(generation_path + str(i) + "\\", random.sample(xrange(477, 608), mm_size), query_size)
 		
 	# create a list that contains current population
 	i = no_first_generation
@@ -293,7 +293,7 @@ def evolutionary_algorithm(test_name):
 		children_population = [] 
 		# Create the new morphable models of the children
 		for child in new_offspring:
-			full_test(generation_path + str(i) + "\\", child, 2)
+			full_test(generation_path + str(i) + "\\", child, query_size)
 			children_population += [i]
 			i += 1
 		
@@ -305,7 +305,7 @@ def evolutionary_algorithm(test_name):
 		# to minimize randomization
 		for l in sorted_population:
 			scans = find_mm_scans(generation_path_prev + str(l[0]))
-			full_test(generation_path + str(l[0]) + "\\", scans, 2)
+			full_test(generation_path + str(l[0]) + "\\", scans, query_size)
 	
 		# Add children to current population and remove all beings
 		# above desired population size
