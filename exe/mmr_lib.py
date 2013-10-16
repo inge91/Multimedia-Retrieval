@@ -63,7 +63,7 @@ no_mutation = 5
 no_children = 5
 mm_size = 30
 max_iter = 9999
-no_first_generation = 5
+#no_first_generation = 5
 query_size = 10
 ###
 
@@ -118,36 +118,36 @@ def build_mm_fast (test_name):
 # The size is based on query_amount, with the testset size being based on the query set.
 # Currently, none of the trainingset FACES is included in the queryset (is this good or bad?)
 def generate_random_testingsets (test_name, query_amount, training_set):
-	print "Generating random query and testset for test", test_name
-	training_list_str = [str(num) for num in training_set]
+    print "Generating random query and testset for test", test_name
+    training_list_str = [str(num) for num in training_set]
 
     # Make a query- and matching testset,
     # queryset containing only Escans (as per example in the pdf),
     # and consisting of even amounts of all Escan versions
-	query_scans = get_random_scans(query_amount, training_list_str, True, True)
-	if len(query_scans) == 0:
-		print "WARNING, QUERYSET EMPTY"
-		print "test name: ",
-		print test_name 
-		print "query_amount: ",
-		print quer_amount
-		print "training_set ",
-		print training_list_str
-		sys.exit(1)
-	test_scans = get_matching_testset(query_scans)   
+    query_scans = get_random_scans(query_amount, training_list_str, True, True)
+    if len(query_scans) == 0:
+        print "WARNING, QUERYSET EMPTY"
+        print "test name: ",
+        print test_name 
+        print "query_amount: ",
+        print quer_amount
+        print "training_set ",
+        print training_list_str
+        sys.exit(1)
+    test_scans = get_matching_testset(query_scans)   
 
     # Copy the sets to the right place
     # TODO: maybe try to make it work without copying, because the file sizes are not small
-	query_path = test_path + test_name + "\\" + query_folder
-	if not os.path.exists(query_path):
-		os.makedirs(query_path)
-	copy_files_filter(mirror_path, query_path, query_scans)
+    query_path = test_path + test_name + "\\" + query_folder
+    if not os.path.exists(query_path):
+        os.makedirs(query_path)
+    copy_files_filter(mirror_path, query_path, query_scans)
     
-	testset_path = test_path + test_name + "\\" + test_folder
-	if not os.path.exists(testset_path):
-		os.makedirs(testset_path)
-	# use mirrored data  
-	copy_files_filter(mirror_path, testset_path, test_scans)     
+    testset_path = test_path + test_name + "\\" + test_folder
+    if not os.path.exists(testset_path):
+        os.makedirs(testset_path)
+    # use mirrored data  
+    copy_files_filter(mirror_path, testset_path, test_scans)     
     
 
 # Fast version that assumes a MM consisting of the first n faces, and hardcoded size.
@@ -196,11 +196,11 @@ def morphfit_scans (test_name, mm_size):
 
 # 3. Evaluate query results
 def evaluate_results(test_name):
-	result_path = test_path + test_name + "\\" + result_folder
-	mean_average_rank(result_path, test_name) 
-	recall_precision_evaluation(result_path, test_name)
-	mean_average_precision(result_path, test_name)
-	last_rank_evaluation(result_path, test_name)
+    result_path = test_path + test_name + "\\" + result_folder
+    mean_average_rank(result_path, test_name) 
+    recall_precision_evaluation(result_path, test_name)
+    mean_average_precision(result_path, test_name)
+    last_rank_evaluation(result_path, test_name)  
 
 # 1-3. Full test
 def full_test(test_name, training_set, query_amount):
@@ -222,225 +222,262 @@ def full_test_fast (test_name):
 # keep top 30
 # how many parents?
 # how much mutation?
-def evolutionary_algorithm(test_name):	
-	iteration = 0
-	generation_path = test_name + "\\" + "generation" + str(iteration) + "\\"
-	# Create file for logging data
-	
-	# Generation 0: create n random morphable models
-	for i in range(0, no_first_generation):
-		# choose random numbers
-		cleanup_exe()		
-		full_test(generation_path + str(i) + "\\", random.sample(xrange(477, 608), mm_size), query_size)
-		
-	# create a list that contains current population
-	i = no_first_generation
-	
-	current_population = range(0, i)
-	#retrieves the fitness of current population 
-	current_fitness = retrieve_fitness(current_population, generation_path)
-	# sorts the population, best fitness in the front, and worst in the back
-	sorted_population = zip(current_population, current_fitness)
-	sorted_population.sort(key=lambda x: x[1], reverse = True)
-	
-	#Write data to log file
-	log_file = open( mmr_path + "log.txt", "a")
-	log_file.write("Generation: " + str(iteration))
-	log_file.write("\n")
-	print_tuple_list(log_file, "Distance: ", sorted_population)
-	log_file.write("\n")
-	log_file.close()
-	
-	cleanup_exe()
-	
-	# Stop condition: if not yet in the right error range or
-	# The amount of iteratins has not yet ended
-	# The optimal possible rank is 
-	#while( if sorted_population[0][0] < 1/3.0 or iteration < 9999):
-	while( iteration < 99):
-		
+def evolutionary_algorithm(test_name):
+    # How many members of an old generation should go on to the next
+    no_survivors = no_population - no_children
+    
+    iteration = 0
+    generation_path = test_name + "\\" + "generation" + str(iteration) + "\\"
+    # Create file for logging data
+    
+    # Generation 0: make a current_population from random MM's
+    current_population = range(0, no_population)
+    
+    for member in current_population:       
+            cleanup_exe()
+            # choose random scans for each member of generation 0
+            full_test(generation_path + str(member) + "\\", random.sample(xrange(477, 608), mm_size), query_size)
 
-		generation_path_prev = test_name + "\\" + "generation" + str(iteration) + "\\"
-		iteration += 1
-		generation_path = test_name + "\\" + "generation" + str(iteration) + "\\"
-		
-		# The children are created by choosing the parents
-		# and mixing them together(with a little mutation)
-		#TODO: Should this be prev?
-		new_offspring, parents = create_offspring(sorted_population, generation_path_prev)
-	
-		children_population = [] 
-		# Create the new morphable models of the children
-		for child in new_offspring:
-			full_test(generation_path + str(i) + "\\", child, query_size)
-			children_population += [i]
-			i += 1
-		
-		# Get fitness of children
-		children_fitness = retrieve_fitness(children_population, generation_path)
-		children_zipped = zip(children_population, children_fitness)
-	
-		# Before adding children evaluate previous generation again
-		# to minimize randomization
-		for l in sorted_population:
-			scans = find_mm_scans(generation_path_prev + str(l[0]))
-			full_test(generation_path + str(l[0]) + "\\", scans, query_size)
-	
-		# Add children to current population and remove all beings
-		# above desired population size
-		sorted_population += children_zipped
-		
-		sorted_population.sort(key=lambda x: x[1], reverse = True)
-		sorted_population = sorted_population[0:no_population]
-
-		# Writing to log
-		log_file = open( mmr_path + "log.txt", "a")
-		log_file.write("Generation: " + str(iteration))
-		log_file.write("\n")
-		print_list(log_file,  "Parents: ", parents)
-		log_file.write("\n")
-		print_tuple_list(log_file, "Distance: ", sorted_population)
-		log_file.write("\n")
-		log_file.close()
-		# Remove all directories that no longer belong to the population
-		# For space efficiency
-		remove_dead(generation_path_prev, sorted_population)
-
-		# Some much needed cleanup of the exe directory
-		cleanup_exe()
-	log_file = open( mmr_path + "log.txt", "a")
-	log_file.write("Found best possible morphable model: \n")
-	log_file.write("NR " + str(sorted_population[0][0]) +  " with a distance of " + str(sorted_population[0][1]))
-	log_file.close()
-	print "Found best possible morphable model: ",
-	print test_name + " "+ str(sorted_population[0][0])
+    #retrieves the fitness of current population
+    # But first write the new average MAR
+    write_average_mar(current_population, generation_path)
+    current_fitness = retrieve_fitness(current_population, generation_path)
+    # sorts the population, best fitness in the front, and worst in the back
+    sorted_population = zip(current_population, current_fitness)
+    sorted_population.sort(key=lambda x: x[1], reverse = True)
 
 
-	
+    #Write data to log file
+    log_file = open( mmr_path + "log.txt", "a")
+    log_file.write("Generation: " + str(iteration))
+    log_file.write("\n")
+    print_tuple_list(log_file, "Distance: ", sorted_population)
+    log_file.write("\n")
+    log_file.close()
+    
+    cleanup_exe()
+
+    #Keep track of 'how to call' the next child
+    next_identifier = no_population
+    
+    # Stop condition: if not yet in the right error range or
+    # The amount of iteratins has not yet ended
+    # The optimal possible rank is 
+    #while( if sorted_population[0][0] < 1/3.0 or iteration < 9999):
+    while( iteration < max_iter):                      
+        iteration += 1
+        generation_path_prev = generation_path
+        generation_path = test_name + "\\" + "generation" + str(iteration) + "\\"
+        
+        # The children are created by choosing the parents
+        # and mixing them together(with a little mutation)
+        #TODO: Should this be prev?
+        new_offspring, parents = create_offspring(sorted_population, generation_path_prev)
+        # Determine the survivors from the previous round
+        old_survivors = sorted_population[:no_survivors]
+
+        # Build the new population
+        current_population = [] 
+        # Test the children (and give them new identifiers)
+        for child in new_offspring:
+                full_test(generation_path + str(next_identifier) + "\\", child, query_size)
+                current_population += [next_identifier]
+                next_identifier += 1
+
+        # Test the old survivors
+        for survivor in old_survivors:
+                scans = find_mm_scans(generation_path_prev + str(survivor[0]))
+                full_test(generation_path + str(survivor[0]) + "\\", scans, query_size)
+                current_population += [survivor[0]]
+
+        # Update the average MAR for the members (and create new ones for the children)
+        write_average_mar(current_population, generation_path, generation_path_prev)
+        
+        # Get fitness of this generation's members
+        population_fitness = retrieve_fitness(current_population, generation_path)
+        population_zipped = zip(current_population, current_fitness)
+        # Determine the final ranking of this generation, to be used by the next generation
+        sorted_population = population_zipped.sort(key=lambda x: x[1], reverse = True)
+
+        # Writing to log
+        log_file = open( mmr_path + "log.txt", "a")
+        log_file.write("Generation: " + str(iteration))
+        log_file.write("\n")
+        print_list(log_file,  "Parents: ", parents)
+        log_file.write("\n")
+        print_tuple_list(log_file, "Distance: ", sorted_population)
+        log_file.write("\n")
+        log_file.close()
+        # Remove all directories that no longer belong to the population
+        # For space efficiency
+        remove_dead(generation_path_prev, sorted_population)
+
+        # Some much needed cleanup of the exe directory
+        cleanup_exe()
+            
+    log_file = open( mmr_path + "log.txt", "a")
+    log_file.write("Found best possible morphable model: \n")
+    log_file.write("NR " + str(sorted_population[0][0]) +  " with a distance of " + str(sorted_population[0][1]))
+    log_file.close()
+    print "Found best possible morphable model: ",
+    print test_name + " "+ str(sorted_population[0][0])
+
+    
 # Removes all dead directories to save space
 def remove_dead(previous_generation_path, alive):
-	for i in os.listdir(test_path + previous_generation_path):
-		shutil.rmtree(test_path + previous_generation_path + i + "\\QuerySet\\")
-		shutil.rmtree(test_path + previous_generation_path + i + "\\TestSet\\")
-		#shutil.rmtree(test_path + previous_generation_path + i + "\\MorphableModel")
-		
+    for i in os.listdir(test_path + previous_generation_path):
+        shutil.rmtree(test_path + previous_generation_path + i + "\\QuerySet\\")
+        shutil.rmtree(test_path + previous_generation_path + i + "\\TestSet\\")
+        #shutil.rmtree(test_path + previous_generation_path + i + "\\MorphableModel")
+        
 # Create offspring #
 # Create offspring given t
 def create_offspring(population, test_name):
 
-	#parents = population[0:no_parents] HARDCODED PARENT CHOICE
-	
-	# The complete population size
-	n = len(population)
-	
-	choice_set = []
-	# depending of the fitness for each participant in the population
-	# create the probability it should be chosen from a set we use 2**n for most likely
-	# and 2 ** 1 for least likely
-	for i in range(0, n):
-		choice_set += [i] * (2**(n-i))
-	
-	# the set of parents
-	parents = [] 
-	# now choose all parents 
-	for j in range(0, no_parents):
-		p = random.choice(choice_set)
-		parents += [population[p][0]]
-		# Remove parent that is already used from choise
-		choice_set = filter(lambda v: v != p , choice_set)
-		
-	offspring = []	
-	
-	# For all combination of parents create 
-	# children
-	previous = [] 
-	for p1 in parents:
-		for p2 in parents:
-			if (p1 == p2) or (p2 in previous):
-				continue
-			# Create a specific number of children for each parent couple
-			for i in range(0, no_children):
-				offspring += [create_child(p1, p2, test_name)]
-			previous += [p1] 
-	return offspring, parents
+    #parents = population[0:no_parents] HARDCODED PARENT CHOICE
+    
+    # The complete population size
+    n = len(population)
+    
+    choice_set = []
+    # depending of the fitness for each participant in the population
+    # create the probability it should be chosen from a set we use 2**n for most likely
+    # and 2 ** 1 for least likely
+    for i in range(0, n):
+        choice_set += [i] * (2**(n-i))
+    
+    # the set of parents
+    parents = [] 
+    # now choose all parents 
+    for j in range(0, no_parents):
+        p = random.choice(choice_set)
+        parents += [population[p][0]]
+        # Remove parent that is already used from choise
+        choice_set = filter(lambda v: v != p , choice_set)
+        
+    offspring = []  
+    
+    # For all combination of parents create 
+    # children
+    previous = [] 
+    for p1 in parents:
+        for p2 in parents:
+            if (p1 == p2) or (p2 in previous):
+                continue
+            # Create a specific number of children for each parent couple
+            for i in range(0, no_children):
+                offspring += [create_child(p1, p2, test_name)]
+            previous += [p1] 
+    return offspring, parents
 
 # Creates a new child, consisting of parental scans and a specific mutated
-# amound	
+# amound    
 def create_child(p1, p2, test_name):
-	child_mm = []
-	# Find out for each parents what scans were used in mmbuild
-	p1_l = find_mm_scans(test_name + str(p1))
-	p2_l = find_mm_scans(test_name + str(p2))
-	mutation = range(477, 608)
-	
-	not_mutated = mm_size - no_mutation  
-	# Let the probability of p1 and p2 be the same
-	# ceil in case the amount is a float and we do
-	# not want the mutation to be more prominent
-	p1_amount = int(math.ceil(not_mutated * 0.5))
-	p2_amount = int(math.ceil(not_mutated * 0.5))
-	
-	#Sequence from which the random generator chooses
-	seq = []
-	seq += [0] * p1_amount
-	seq += [1] * p2_amount
-	seq += [2] * no_mutation
-	
-	# Each element has a chance
-	# of being from p1, p2 or part of the mutation
-	for i in range(0, mm_size):
-		r = random.choice(seq)
-		if r == 0:
-			add_elements(p1_l, child_mm)
-		if r == 1:
-			add_elements(p2_l, child_mm)
-		if r == 2:
-			add_elements(mutation, child_mm)
-	return child_mm
-	
+    child_mm = []
+    # Find out for each parents what scans were used in mmbuild
+    p1_l = find_mm_scans(test_name + str(p1))
+    p2_l = find_mm_scans(test_name + str(p2))
+    mutation = range(477, 608)
+    
+    not_mutated = mm_size - no_mutation  
+    # Let the probability of p1 and p2 be the same
+    # ceil in case the amount is a float and we do
+    # not want the mutation to be more prominent
+    p1_amount = int(math.ceil(not_mutated * 0.5))
+    p2_amount = int(math.ceil(not_mutated * 0.5))
+    
+    #Sequence from which the random generator chooses
+    seq = []
+    seq += [0] * p1_amount
+    seq += [1] * p2_amount
+    seq += [2] * no_mutation
+    
+    # Each element has a chance
+    # of being from p1, p2 or part of the mutation
+    for i in range(0, mm_size):
+        r = random.choice(seq)
+        if r == 0:
+            add_elements(p1_l, child_mm)
+        if r == 1:
+            add_elements(p2_l, child_mm)
+        if r == 2:
+            add_elements(mutation, child_mm)
+    return child_mm
+    
 # Adds element from the random list to add_to_list
 # without adding double values
 def add_elements(random_list, add_to_list):
-	selected_elements = [] 
-	new_scan = random.choice(random_list)
-	while(new_scan in add_to_list):
-		new_scan = random.choice(random_list)
-	selected_elements += [new_scan]
-	add_to_list += [new_scan]
-	return selected_elements
-	
+    selected_elements = [] 
+    new_scan = random.choice(random_list)
+    while(new_scan in add_to_list):
+        new_scan = random.choice(random_list)
+    selected_elements += [new_scan]
+    add_to_list += [new_scan]
+    return selected_elements
+    
 # find_mm_scans
 # returns numbers of the scans with which the morphable model was made for given dir
 def find_mm_scans(test_name):
-	mm_path = test_path + test_name + "\\" + mm_folder
-	mm_list = []
-	# loop through all files
-	for filename in os.listdir(mm_path):
-		# if a file end with ply and begins with a number
-		# add the number to the mm list
-		if(filename.endswith(".ply")):
-			if filename[0].isdigit():
-				mm_list += [int(filename[0:3])]
-	return mm_list
-	
+    mm_path = test_path + test_name + "\\" + mm_folder
+    mm_list = []
+    # loop through all files
+    for filename in os.listdir(mm_path):
+        # if a file end with ply and begins with a number
+        # add the number to the mm list
+        if(filename.endswith(".ply")):
+            if filename[0].isdigit():
+                mm_list += [int(filename[0:3])]
+    return mm_list
+    
 # Utility function
 # retrieve fitness 
 # returns the fitness for a list of candidates
 def retrieve_fitness(candidates, evol_path):
-	ranks = []
-	for candidate in candidates:
-		path = test_path + evol_path + str(candidate) + "\\" + "eval\\"
-		# In case the path does not exist exit, as there is something wrong
-		if not os.path.exists(path):
-			print "ERROR: Fitness function could not be calculated as"
-			print  path,
-			print  "is missing.. Exiting"
-			sys.exit(1)
-		# return the rank from the pickle
-		r = cPickle.load(open(path + "mean_average_rank.p"))
-		ranks += [1 / float(r)]
-	return ranks
-	
+    ranks = []
+    for candidate in candidates:
+        path = test_path + evol_path + str(candidate) + "\\" + "eval\\"
+        # In case the path does not exist exit, as there is something wrong
+        if not os.path.exists(path):
+                print "ERROR: Fitness function could not be calculated as"
+                print  path,
+                print  "is missing.. Exiting"
+                sys.exit(1)
+        # Retrieve the average MAR from the pickle
+        average_mar = float( cPickle.load(open(path + "average_mar.p")) )
+        ranks += [1 / average_mar]
+         
+    return ranks
+
+# Write the new average MAR for all members
+def write_average_mar(members, evo_path, evo_path_prev = ""):
+    for member in members:
+        path = test_path + evo_path + str(member) + "\\" + "eval\\"
+        prev_path = test_path + evo_path_prev + str(member) + "\\" + "eval\\"
+
+        # No old MAR measurements available
+        if (evo_path_prev == "" or not os.path.exists(prev_path)):
+            new_samples = 1
+            new_average_mar = float( cPickle.load(open(path + "mean_average_rank.p")) )
+        # Calculate from old measurements
+        else:
+            # read...
+            old_average_mar = float( cPickle.load(open(prev_path + "average_mar.p")) )
+            new_mar = float( cPickle.load(open(path + "mean_average_rank.p")) )
+            old_samples = int( cPickle.load(open(prev_path + "mar_samples.p")) )
+            # caluclate...
+            new_samples = old_samples + 1
+            new_average_mar = (old_average_mar * old_samples + new_mar) / new_samples
+            print "Old survivor", str(member), "went from", str(old_average_mar), "average MAR to", str(new_average_mar), "with a MAR of", str(new_mar), "and now" + str(new_samples) + "samples"
+
+        # Now write the results
+        cPickle.dump(new_average_mar, open(path + "average_mar.p", "wb"))
+        f = open(path + 'average_mar.txt', 'wb')
+        f.write(str(new_average_mar))
+        cPickle.dump(new_samples, open(path + "mar_samples.p", "wb"))
+        f = open(path + 'mar_samples.txt', 'wb')
+        f.write(str(new_samples))        
+    
+    
 ## Utility functions
 
 # Copy files #
@@ -480,9 +517,9 @@ def cleanup_exe():
     cleanup_filter(exe_path, ["py", "exe"])
 
 def cleanup_test(test_name):
-	if os.path.exists(test_path + test_name):
-		print "Removing test folder for test", test_name
-		shutil.rmtree(test_path + test_name)
+    if os.path.exists(test_path + test_name):
+        print "Removing test folder for test", test_name
+        shutil.rmtree(test_path + test_name)
                 
  # Move files #
  # Move files that have the substring filter_list in them from from_dir to to_dir
@@ -500,34 +537,34 @@ def move_files_filter (from_dir, to_dir, filter_list):
   # Evaluate distances #
  # Evaluates the distance between a single query files and all test files
 def evaluate_distances(q_file, test_path, result_path, test_name):
-	q_vector = file_to_list(q_file)
+    q_vector = file_to_list(q_file)
 
-	basename = os.path.basename(q_file.name)
-	name = basename[0:3]
+    basename = os.path.basename(q_file.name)
+    name = basename[0:3]
 
     # create file containing ordered list of file rankings
-	result_file = open(result_path + name + '.txt', 'w+')
+    result_file = open(result_path + name + '.txt', 'w+')
     
     #list of distances
-	distances = []
+    distances = []
     
-	for filename in os.listdir(test_path):
-	# make sure the file is a .params
-		if not ("final.params" in filename) :
-			continue	
-		t_file = open(test_path + filename, 'r')
-		t_vector = file_to_list(t_file)
-		dist = calc_euclidian_weighted_distance(q_vector, t_vector, test_name)
-		distances = distances + [(filename, dist)]
+    for filename in os.listdir(test_path):
+    # make sure the file is a .params
+        if not ("final.params" in filename) :
+            continue    
+        t_file = open(test_path + filename, 'r')
+        t_vector = file_to_list(t_file)
+        dist = calc_euclidian_weighted_distance(q_vector, t_vector, test_name)
+        distances = distances + [(filename, dist)]
     # Sort the distances
-	distances = sorted(distances,key=lambda x: x[1])
-	for candidate in distances:
-		result_file.write("%s: " % candidate[0])
-		result_file.write("%f\n" % candidate[1])
-	# Last elements should be written without newline
-	#result_file.write("%s: " % distances[-1][0])
+    distances = sorted(distances,key=lambda x: x[1])
+    for candidate in distances:
+        result_file.write("%s: " % candidate[0])
+        result_file.write("%f\n" % candidate[1])
+    # Last elements should be written without newline
+    #result_file.write("%s: " % distances[-1][0])
     #result_file.write("%f" % distances[-1][1])
-	result_file.close()
+    result_file.close()
  
  
 # Fit mm
@@ -540,34 +577,34 @@ def calc_euclidian_distance(q_vec, s_vec):
         y = s_vec[i]
         cumulative = cumulative + (x - y)**2
     return math.sqrt(cumulative)
-	
+    
 def calc_euclidian_weighted_distance(q_vec, s_vec, test_name):
-	cumulative = 0
-	# find weights
-	weights = find_weights(test_name)
-	for i in range(0, len(q_vec)):
-		x = q_vec[i]
-		y = s_vec[i]
-		w = weights[i] 					#OLD WEIGHT DISTRIBUTION (1.0 / (i+1))
-		cumulative = cumulative + w *(x - y)**2
-	return math.sqrt(cumulative)	
-	
+    cumulative = 0
+    # find weights
+    weights = find_weights(test_name)
+    for i in range(0, len(q_vec)):
+        x = q_vec[i]
+        y = s_vec[i]
+        w = weights[i]                  #OLD WEIGHT DISTRIBUTION (1.0 / (i+1))
+        cumulative = cumulative + w *(x - y)**2
+    return math.sqrt(cumulative)    
+    
 def find_weights(test_name):
-	# the file in which the weights are written
-	mm_build = test_path + test_name + "\\" + mm_folder + "mmbuild.txt"
-	f = open(mm_build, "r")
-	f_complete = f.read()
-	lines = f_complete.split("\n")
-	# The third lines consists of the sigma values
-	sigma_line = lines[2]
-	#split the sigmas on tab values
-	sigmas = sigma_line.split("\t")
-	# make the values of the list consist of floats instead of string
-	# exclude last one, as it is an empty string
-	sigma_values = [float(i) for i in sigmas[:-1]]
-	sigma_values += [0] * (99 - (n - 1))
-	return sigma_values
-	
+    # the file in which the weights are written
+    mm_build = test_path + test_name + "\\" + mm_folder + "mmbuild.txt"
+    f = open(mm_build, "r")
+    f_complete = f.read()
+    lines = f_complete.split("\n")
+    # The third lines consists of the sigma values
+    sigma_line = lines[2]
+    #split the sigmas on tab values
+    sigmas = sigma_line.split("\t")
+    # make the values of the list consist of floats instead of string
+    # exclude last one, as it is an empty string
+    sigma_values = [float(i) for i in sigmas[:-1]]
+    sigma_values += [0] * (99 - (n - 1))
+    return sigma_values
+    
 # File to list #
 # read in a file descriptor and return a list
 def file_to_list(f):
@@ -642,187 +679,189 @@ def get_matching_testset (queryset):
 # Evaluation Functions #    
 # lat_rank_evaluation evaluates all files in a directory using last_rank
 def last_rank_evaluation(path, test_name):
-	total_index = 0
-	for filename in os.listdir(path):
-		f = open(path + filename, 'r')
-		index = last_rank(f, filename[0:3])
-		total_index = total_index + index
-	last_r = total_index / len(os.listdir(path)) 
-	rp_path = test_path + test_name + "\\" + "eval\\"
-	if not os.path.exists(rp_path):
-		os.makedirs(rp_path)
-	txt = open(rp_path + 'last_rank.txt', 'wb')
-	cPickle.dump(last_r, open(rp_path + 'last_rank.p', 'wb'))
-	txt.write(str(last_r))
-	print "last rank =",
-	print last_r
-	
+    total_index = 0
+    for filename in os.listdir(path):
+        f = open(path + filename, 'r')
+        index = last_rank(f, filename[0:3])
+        total_index = total_index + index
+    last_r = total_index / len(os.listdir(path)) 
+    rp_path = test_path + test_name + "\\" + "eval\\"
+    if not os.path.exists(rp_path):
+        os.makedirs(rp_path)
+    txt = open(rp_path + 'last_rank.txt', 'wb')
+    cPickle.dump(last_r, open(rp_path + 'last_rank.p', 'wb'))
+    txt.write(str(last_r))
+    print "last rank =",
+    print last_r
+    
 # last_rank takes the index of the last matching scan and its 
 # distance and writes to file
 def last_rank(file, number):
-	ranks_str = file.read()
-	ranks = ranks_str.split("\n")
-	index = 0
-	rank = 0
-	for x in ranks:
-		if number in x:
-			rank = index + 1
-		index = index + 1
-	return rank
+    ranks_str = file.read()
+    ranks = ranks_str.split("\n")
+    index = 0
+    rank = 0
+    for x in ranks:
+        if number in x:
+            rank = index + 1
+        index = index + 1
+    return rank
 
 # for all files in results applies recall_precision and writes to evaluation
 def recall_precision_evaluation(path, test_name):
-	n = os.listdir(path)[0]
-	f = open(path + n, 'r')
-	ranks_str = f.read()
-	ranks = ranks_str.split("\n")
-	# Remove the last "" element
-	ranks = ranks[:-1]
-	l = len(ranks)
-	
-	# create total precision and recall list
-	total_precision = [0] * l
-	total_recall = [0] * l
-	for filename in os.listdir(path):
-		f = open(path + filename, 'r')
-		p, r = recall_precision(f, filename[0:3])
-		# add new calculated precision and recall to total
-		total_precision = [i + j for i, j in zip(total_precision, p)]
-		total_recall = [i + j for i, j in zip(total_recall, r)]
-	
-	# normalize values
-	total_precision = [x/len(os.listdir(path)) for x in total_precision]
-	total_recall = [x/len(os.listdir(path)) for x in total_recall]
-	
-	# check if there is already a recal precision dir
-	rp_path = test_path + test_name + "\\" + "eval\\"
-	if not os.path.exists(rp_path):
-		os.makedirs(rp_path)
-		
-	# Pickle files for easy plotting access
-	cPickle.dump(total_precision, open(rp_path + 'precision.p', 'wb'))
-	cPickle.dump(total_recall, open(rp_path + 'recall.p', 'wb'))
-	txt = open(rp_path + 'precision.txt', 'wb')
-	print_list(txt, "", total_precision)
-	
-	txt2 = open(rp_path + 'recall.txt', 'wb')
-	print_list(txt2, "", total_recall)
-	
-	print total_precision
-	print total_recall
-	
+    n = os.listdir(path)[0]
+    f = open(path + n, 'r')
+    ranks_str = f.read()
+    ranks = ranks_str.split("\n")
+    # Remove the last "" element
+    ranks = ranks[:-1]
+    l = len(ranks)
+    
+    # create total precision and recall list
+    total_precision = [0] * l
+    total_recall = [0] * l
+    for filename in os.listdir(path):
+        f = open(path + filename, 'r')
+        p, r = recall_precision(f, filename[0:3])
+        # add new calculated precision and recall to total
+        total_precision = [i + j for i, j in zip(total_precision, p)]
+        total_recall = [i + j for i, j in zip(total_recall, r)]
+    
+    # normalize values
+    total_precision = [x/len(os.listdir(path)) for x in total_precision]
+    total_recall = [x/len(os.listdir(path)) for x in total_recall]
+    
+    # check if there is already a recal precision dir
+    rp_path = test_path + test_name + "\\" + "eval\\"
+    if not os.path.exists(rp_path):
+        os.makedirs(rp_path)
+        
+    # Pickle files for easy plotting access
+    cPickle.dump(total_precision, open(rp_path + 'precision.p', 'wb'))
+    cPickle.dump(total_recall, open(rp_path + 'recall.p', 'wb'))
+    txt = open(rp_path + 'precision.txt', 'wb')
+    print_list(txt, "", total_precision)
+    
+    txt2 = open(rp_path + 'recall.txt', 'wb')
+    print_list(txt2, "", total_recall)
+    
+    print total_precision
+    print total_recall
+    
 # At each index of the ranking calculate precision and recall
 def recall_precision(file, number):
-	ranks_str = file.read()
-	ranks = ranks_str.split("\n")
-	ranks = ranks[:-1]
-	l = len(ranks)
-	precisions = [0] * l
-	recalls = [0] * l
-	for i in range(0, l):
-		r = relevant_shapes(ranks[0:i+1], number)
-		precisions[i] = float(r) / (i + 1)
-		m = relevant_shapes(ranks, number)
-		recalls[i] = float(r) / m	
-	return precisions, recalls
+    ranks_str = file.read()
+    ranks = ranks_str.split("\n")
+    ranks = ranks[:-1]
+    l = len(ranks)
+    precisions = [0] * l
+    recalls = [0] * l
+    for i in range(0, l):
+        r = relevant_shapes(ranks[0:i+1], number)
+        precisions[i] = float(r) / (i + 1)
+        m = relevant_shapes(ranks, number)
+        recalls[i] = float(r) / m   
+    return precisions, recalls
 
 # Mean Average Precision #
 # For each query result calculate the average precision and normalize 
 # by query set size
 # A value of 1 means a perfect performance by the mm (all matching masks are the first to be retrieved)
 def mean_average_precision(path, test_name):
-	q = len(os.listdir(path))
-	total_average_precision = 0
-	for filename in os.listdir(path):
-		f = open(path + filename, 'r')
-		total_average_precision += average_precision(f, filename)
-	mean_average_precision = float(total_average_precision)/q
-		# check if there is already a recal precision dir
-	rp_path = test_path + test_name + "\\" + "eval\\"
-	if not os.path.exists(rp_path):
-		os.makedirs(rp_path)
-		
-	# Pickle files for easy plotting access
-	cPickle.dump(mean_average_precision, open(rp_path + 'mean_average_precision.p', 'wb'))
+    q = len(os.listdir(path))
+    total_average_precision = 0
+    for filename in os.listdir(path):
+        f = open(path + filename, 'r')
+        total_average_precision += average_precision(f, filename)
+    mean_average_precision = float(total_average_precision)/q
+        # check if there is already a recal precision dir
+    rp_path = test_path + test_name + "\\" + "eval\\"
+    if not os.path.exists(rp_path):
+        os.makedirs(rp_path)
+        
+    # Pickle files for easy plotting access
+    cPickle.dump(mean_average_precision, open(rp_path + 'mean_average_precision.p', 'wb'))
 
-	txt = open(rp_path + 'mean_average_precision.txt', 'wb')
-	txt.write(str(mean_average_precision))
+    txt = open(rp_path + 'mean_average_precision.txt', 'wb')
+    txt.write(str(mean_average_precision))
 
-	
-	print "Mean average precision: "
-	print mean_average_precision
-	
+    
+    print "Mean average precision: "
+    print mean_average_precision
+    
 # Average Precision #
 # calculate precision of query result
 # at each position of the rank 
 def average_precision(file, filename):
-	average_precision = 0
-	p, r = recall_precision(file, filename[0:3])
-	for i in range(0, len(p)):
-		if i > 0:
-			diff_r = r[i] - r[i-1]
-		else:
-			diff_r = r[i]
-		average_precision += p[i] * diff_r
-	return average_precision
-	
+    average_precision = 0
+    p, r = recall_precision(file, filename[0:3])
+    for i in range(0, len(p)):
+        if i > 0:
+            diff_r = r[i] - r[i-1]
+        else:
+            diff_r = r[i]
+        average_precision += p[i] * diff_r
+    return average_precision
+    
 # returns the amount of elements in the list that
 # match the term number 
 def relevant_shapes(ranks, number):
-	matches = 0 
-	for i in ranks:
-		if i.startswith(number):
-			matches = matches + 1
-	return matches
+    matches = 0 
+    for i in ranks:
+        if i.startswith(number):
+            matches = matches + 1
+    return matches
 
-	# Calculates the mean average rank for all
-	# query objects belonging to a single test
+    # Calculates the mean average rank for all
+    # query objects belonging to a single test
 def mean_average_rank(path, test_name):
-	q = len(os.listdir(path))
-	total_average_rank = 0
-	for filename in os.listdir(path):
-		f = open(path + filename, 'r')
-		total_average_rank += average_rank(f, filename)
-	mean_average_rank = float(total_average_rank)/q
-	mar_path = test_path + test_name + "\\" + "eval\\"
-	if not os.path.exists(mar_path):
-		os.makedirs(mar_path)
-	cPickle.dump(mean_average_rank, open(mar_path + 'mean_average_rank.p', 'wb'))
-	f = open(mar_path + 'mean_average_rank.txt', 'wb')
-	f.write(str(mean_average_rank))
-	print "Mean average rank: "
-	print mean_average_rank
+    q = len(os.listdir(path))
+    total_average_rank = 0
+    for filename in os.listdir(path):
+        f = open(path + filename, 'r')
+        total_average_rank += average_rank(f, filename)
+    mean_average_rank = float(total_average_rank)/q
+    mar_path = test_path + test_name + "\\" + "eval\\"
+    if not os.path.exists(mar_path):
+        os.makedirs(mar_path)
+    cPickle.dump(mean_average_rank, open(mar_path + 'mean_average_rank.p', 'wb'))
+    f = open(mar_path + 'mean_average_rank.txt', 'wb')
+    f.write(str(mean_average_rank))
+    print "Mean average rank: "
+    print mean_average_rank
+
+
 
 # Find the average of a rank in a single query retrieval
 def average_rank(file, filename):
-	ranks_str = file.read()
-	ranks = ranks_str.split("\n")
-	correct_ranks = []
-	for i in range(0, len(ranks)):
-		if ranks[i].startswith(filename[0:3]):
-			correct_ranks += [i+1]
-	return sum(correct_ranks)/float(len(correct_ranks))
-	
+    ranks_str = file.read()
+    ranks = ranks_str.split("\n")
+    correct_ranks = []
+    for i in range(0, len(ranks)):
+        if ranks[i].startswith(filename[0:3]):
+            correct_ranks += [i+1]
+    return sum(correct_ranks)/float(len(correct_ranks))
+    
 # Write a list of tuples to a file descriptor
 def print_tuple_list(f, text, tuple_list):
-	f.write(text)
-	f.write("[")
-	for i in tuple_list:
-		f.write("(")
-		f.write(str(i[0]))
-		f.write(" , ") 
-		f.write(str(i[1]))
-		f.write("), ")
-	f.write("]")	
-	
+    f.write(text)
+    f.write("[")
+    for i in tuple_list:
+        f.write("(")
+        f.write(str(i[0]))
+        f.write(" , ") 
+        f.write(str(i[1]))
+        f.write("), ")
+    f.write("]")    
+    
 # Write a list to a file descriptor
 def print_list(f, text, list):
-	f.write(text)
-	f.write("[")
-	for i in list:
-		f.write(str(i))		
-		f.write(", ")
-	f.write("]")
+    f.write(text)
+    f.write("[")
+    for i in list:
+        f.write(str(i))     
+        f.write(", ")
+    f.write("]")
 
 # Execute a system command
 def execute(command):
@@ -836,8 +875,7 @@ def execute(command):
 #cleanup_test("test1")    
 #full_test("sigma_test", range(477, 477 + n), 2)
 
-
-evolutionary_algorithm("Evoltest1")
+evolutionary_algorithm("Evo_new999_3")
 
 
 # TIME (Tim PC) - full_test_fast:
