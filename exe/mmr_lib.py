@@ -165,7 +165,7 @@ def generate_random_testingsets_fast (test_name):
 # 2. Query the scans
 # Applies morphfit using the existing data.bin file on both the query set and the test set
 # to find the final params and writes these to the right directory
-def morphfit_scans (test_name):
+def morphfit_scans (test_name, mm_size):
 
     # Path to query and test directories
     query_path = test_path + test_name + "\\" + query_folder
@@ -174,7 +174,7 @@ def morphfit_scans (test_name):
     # Path to the morphable model
     mm_path = test_path + test_name + "\\" + mm_folder + "data.bin"
     
-    principal_components = str(n-1)
+    principal_components = str(mm_size - 1)
     
     # Apply morphfit to the  query set
     command = "morphfit " + query_path + " 1 " + mm_path + " " + principal_components
@@ -215,14 +215,14 @@ def evaluate_results(test_name):
 def full_test(test_name, training_set, query_amount):
     build_mm (test_name, training_set)
     generate_random_testingsets (test_name, query_amount, training_set)
-    morphfit_scans (test_name)
-    evaluate_results(test_name)
+    morphfit_scans (test_name, len(training_set))
+    evaluate_results(test_name, )
 
 # Uses the hardcoded functions
 def full_test_fast (test_name):
     build_mm_fast (test_name)
     generate_random_testingsets_fast (test_name)
-    morphfit_scans (test_name)
+    morphfit_scans (test_name, n)
     evaluate_results(test_name)
 
 # Evolutionary Algorithm #
@@ -729,13 +729,16 @@ def average_rank(file, filename):
 #cleanup_exe()
 #evaluate_results("FTfast3")
 #cleanup_test("test1")    
-evolutionary_algorithm()
+#evolutionary_algorithm()
 #full_test_fast("FTfast4")
 #full_test("sigma_test", range(477, 477 + n), 2)
 '''
 for size in range(5, 125, 5):
     full_test("First_" + str(size), range(477, size + 1), 10)
     '''  
+cleanup_test("bla99");
+full_test("bla99", range(477, 477 + 80), 10)
+
 
 #precalc_facecor();
 #full_test("FullTest550-580_5", range(550, 581), 5)
