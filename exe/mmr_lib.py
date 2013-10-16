@@ -50,7 +50,7 @@ result_folder = "Results\\"
 # Default set settings
 # Training set = first n picza's
 n = 30
-query_size = 5
+
 #test_size = 20
 
 # Evolutionary algorithm 
@@ -58,10 +58,10 @@ no_parents = 2
 no_population = 10
 no_mutation = 5
 no_children = 5
-mm_size = 30
+mm_size = 41
 max_iter = 9999
 no_first_generation = 5
-
+query_size = 5
 ###
 
 
@@ -174,7 +174,7 @@ def generate_random_testingsets_fast (test_name):
 # 2. Query the scans
 # Applies morphfit using the existing data.bin file on both the query set and the test set
 # to find the final params and writes these to the right directory
-def morphfit_scans (test_name):
+def morphfit_scans (test_name, mm_size):
 
     # Path to query and test directories
     query_path = test_path + test_name + "\\" + query_folder
@@ -183,7 +183,7 @@ def morphfit_scans (test_name):
     # Path to the morphable model
     mm_path = test_path + test_name + "\\" + mm_folder + "data.bin"
     
-    principal_components = str(n-1)
+    principal_components = str(mm_size - 1)
     
     # Apply morphfit to the  query set
     command = "morphfit " + query_path + " 1 " + mm_path + " " + principal_components
@@ -227,14 +227,14 @@ def evaluate_results(test_name):
 def full_test(test_name, training_set, query_amount):
     build_mm (test_name, training_set)
     generate_random_testingsets (test_name, query_amount, training_set)
-    morphfit_scans (test_name)
-    evaluate_results(test_name)
+    morphfit_scans (test_name, len(training_set))
+    evaluate_results(test_name, )
 
 # Uses the hardcoded functions
 def full_test_fast (test_name):
     build_mm_fast (test_name)
     generate_random_testingsets_fast (test_name)
-    morphfit_scans (test_name)
+    morphfit_scans (test_name, n)
     evaluate_results(test_name)
 
 # Evolutionary Algorithm #
@@ -252,7 +252,7 @@ def evolutionary_algorithm(test_name):
 	for i in range(0, no_first_generation):
 		# choose random numbers
 		cleanup_exe()		
-		full_test(generation_path + str(i) + "\\", random.sample(xrange(477, 608), 30), 2)
+		full_test(generation_path + str(i) + "\\", random.sample(xrange(477, 608), mm_size), query_size)
 		
 	# create a list that contains current population
 	i = no_first_generation
@@ -293,7 +293,7 @@ def evolutionary_algorithm(test_name):
 		children_population = [] 
 		# Create the new morphable models of the children
 		for child in new_offspring:
-			full_test(generation_path + str(i) + "\\", child, 2)
+			full_test(generation_path + str(i) + "\\", child, query_size)
 			children_population += [i]
 			i += 1
 		
@@ -305,7 +305,7 @@ def evolutionary_algorithm(test_name):
 		# to minimize randomization
 		for l in sorted_population:
 			scans = find_mm_scans(generation_path_prev + str(l[0]))
-			full_test(generation_path + str(l[0]) + "\\", scans, 2)
+			full_test(generation_path + str(l[0]) + "\\", scans, query_size)
 	
 		# Add children to current population and remove all beings
 		# above desired population size
@@ -409,7 +409,7 @@ def create_child(p1, p2, test_name):
 	
 	# Each element has a chance
 	# of being from p1, p2 or part of the mutation
-	for i in range(0, 30):
+	for i in range(0, mm_size):
 		r = random.choice(seq)
 		if r == 0:
 			add_elements(p1_l, child_mm)
@@ -846,21 +846,14 @@ def print_list(f, text, list):
 	f.write("]")		
 
 
-#generate_random_testingsets_fast("test1")
-#morphfit_scans("test1")
-#cleanup_exe()
-#evaluate_results("FTfast3")
-#cleanup_test("test1")    
-evolutionary_algorithm("Evol7")
-#full_test_fast("FTfast4")
-#full_test("sigma_test", range(477, 477 + n), 2)
-'''
-for size in range(5, 125, 5):
-    full_test("First_" + str(size), range(477, size + 1), 10)
-    '''  
-
 #precalc_facecor();
-#full_test("FullTest550-580_5", range(550, 581), 5)
+#cleanup_exe()
+#cleanup_test("test1")    
+#full_test("sigma_test", range(477, 477 + n), 2)
+
+
+evolutionary_algorithm("Evol7")
+
 
 # TIME (Tim PC) - full_test_fast:
 # facecor + mm (mostly facecor) -> 1 min =~                                       2 sec * |trainingset|
