@@ -57,11 +57,11 @@ run_in_background = True
 #test_size = 20
 
 # Evolutionary algorithm 
-no_parents = 2
+no_parents = 3
 no_population = 10
-no_mutation = 5
+no_mutation = 10
 no_children = 5
-mm_size = 30
+mm_size = 60
 max_iter = 9999
 #no_first_generation = 5
 query_size = 10
@@ -296,7 +296,7 @@ def evolutionary_algorithm(test_name):
         # Get fitness of this generation's members
         population_fitness = retrieve_fitness(current_population, generation_path)
  
-        sorted_population = zip(current_population, current_fitness)
+        sorted_population = zip(current_population, population_fitness)
       
         # Determine the final ranking of this generation, to be used by the next generation
         sorted_population.sort(key=lambda x: x[1], reverse = True)
@@ -885,7 +885,7 @@ def execute(command):
 #cleanup_test("test1")    
 #full_test("sigma_test", range(477, 477 + n), 2)
 
-evolutionary_algorithm("Evo_new999_3")
+evolutionary_algorithm("Evo_60scans_999iterationsREAL")
 
 
 # TIME (Tim PC) - full_test_fast:
