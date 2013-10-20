@@ -291,7 +291,6 @@ plot_evolution("evo90_progress_MAR_avg", ["Evo_90_fixed"],
 #           use_for_member = get_final_amar,
 #           use_for_generation = lambda l: min(l), description = ["final amar"], file_names = ["evo_60_fixed_final_amar"])
 
-#make_slide_figures()
+make_slide_figures()
 #member, score = find_best("F:\\MMR\\tests\\evo_60_fixed\\")
 #print member
-plot_precision_recall(["F:\\MMR\\tests\\evo_60_fixed\\generation40\\202"], ["evo_60_fixed_best_pc"])
