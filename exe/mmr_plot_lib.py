@@ -14,8 +14,7 @@ path = "F:\MMR\tests\evo_60_fixed\generation0\\"
 # plots all precision and recall files that could be found
 # in a single graph
 def plot_precision_recall(plot_name, paths, file_names = []):
-    artists = []
-    artist_strings =[]
+
             #rp_path = mmr_lib.test_path + element + "\\" + "eval\\"
     for p in paths:
        
@@ -36,9 +35,8 @@ def plot_precision_recall(plot_name, paths, file_names = []):
         precision = [x[0] for x in pr_clean]
         recall = [x[1] for x in pr_clean]
         print "Plotting "
-        f, = plt.plot(recall,precision, 'o-')
-        artists += [f]
-        artist_strings += ["MM with trainingsize " + str(train_size)]
+        f, = plt.plot(recall,precision, 'o-', label="MM with trainingsize " + str(train_size))
+
         if len(file_names) > 0:
             cPickle.dump(recall, open(file_names[paths.index(p)] + "_recall.p", "w") ) 
             cPickle.dump(precision , open(file_names[paths.index(p)] + "_precision.p", "w") )
@@ -48,7 +46,6 @@ def plot_precision_recall(plot_name, paths, file_names = []):
     plt.xlabel('Recall')
     plt.ylabel('Precision')
     plt.title('Recall & Precision of best MMS')
-    plt.legend(artists, artist_strings)
     print "Saving to file"
     plt.savefig(plot_name + '.png')
     
