@@ -14,10 +14,8 @@ path = "F:\MMR\tests\evo_60_fixed\generation0\\"
 # plots all precision and recall files that could be found
 # in a single graph
 def plot_precision_recall(plot_name, paths, file_names = []):
-   
     artists = []
     artist_strings =[]
-    plt.figure()
             #rp_path = mmr_lib.test_path + element + "\\" + "eval\\"
     for p in paths:
        
@@ -53,7 +51,6 @@ def plot_precision_recall(plot_name, paths, file_names = []):
     plt.legend(artists, artist_strings)
     print "Saving to file"
     plt.savefig(plot_name + '.png')
-    plt.close()
     
     
 def diff_recall(pr_list):
