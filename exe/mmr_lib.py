@@ -59,11 +59,10 @@ run_in_background = True
 # Evolutionary algorithm 
 no_parents = 3
 no_population = 10
-no_mutation = 10
+no_mutation = 15
 no_children = 5
-mm_size = 60
+mm_size = 90
 max_iter = 9999
-#no_first_generation = 5
 query_size = 10
 ###
 
@@ -227,19 +226,25 @@ def evolutionary_algorithm(test_name):
     no_survivors = no_population - no_children
     
     iteration = 0
+    #iteration = 51
+
+    
     generation_path = test_name + "\\" + "generation" + str(iteration) + "\\"
     
     # Generation 0: make a current_population from random MM's
     current_population = range(0, no_population)
-    
+    #current_population = [233, 248, 249, 251, 258, 260, 261, 262, 263, 264]
+
     for member in current_population:       
             cleanup_exe()
             # choose random scans for each member of generation 0
             full_test(generation_path + str(member) + "\\", random.sample(xrange(477, 608), mm_size), query_size)
+    
 
     #retrieves the fitness of current population
     # But first write the new average MAR
     write_average_mar(current_population, generation_path)
+
     current_fitness = retrieve_fitness(current_population, generation_path)
     # sorts the population, best fitness in the front, and worst in the back
     sorted_population = zip(current_population, current_fitness)
@@ -247,6 +252,7 @@ def evolutionary_algorithm(test_name):
 
 
     #Write data to log file
+    
     log_file = open( mmr_path + "log.txt", "a")
     log_file.write("Generation: " + str(iteration))
     log_file.write("\n")
@@ -254,10 +260,12 @@ def evolutionary_algorithm(test_name):
     log_file.write("\n")
     log_file.close()
     
+    
     cleanup_exe()
 
     #Keep track of 'how to call' the next child
     next_identifier = no_population
+    #next_identifier = 265
     
     # Stop condition: if not yet in the right error range or
     # The amount of iteratins has not yet ended
@@ -885,7 +893,9 @@ def execute(command):
 #cleanup_test("test1")    
 #full_test("sigma_test", range(477, 477 + n), 2)
 
-evolutionary_algorithm("Evo_60scans_999iterationsREAL")
+#cleanup_exe()
+#evolutionary_algorithm("EvoAlg_90_fixed")
+
 
 
 # TIME (Tim PC) - full_test_fast:
