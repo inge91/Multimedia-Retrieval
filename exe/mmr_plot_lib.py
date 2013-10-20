@@ -143,12 +143,46 @@ def find_best(experiment_path, evaluate = get_final_amar):
     return best_member, best_score;
 
 
+
+
+def make_slide_figures():
+    # Compare 'randomness' / steadiness (why was AMAR necessary)
+    # Only for one of the experiments
+    # TODO maybe use 30 for this example instead of 90
+    plt.figure()
+    plot_evolution("slide1", ["Evo_90_fixed"],
+               use_for_member = get_mar,
+               use_for_generation = lambda l: min(l))
+    plot_evolution("slide2", ["Evo_90_fixed"],
+               use_for_member = get_current_amar,
+               use_for_generation = lambda l: min(l))
+    plot_evolution("slide3", ["Evo_90_fixed"],
+               use_for_member = get_final_amar,
+               use_for_generation = lambda l: min(l))
+    plt.close()
+    
+    # Next compare the experiments with eachother (using final AMAR)
+    # TODO add 30 and 60
+    plt.figure()
+    plot_evolution("slide4", ["Evo_90_fixed"],
+           use_for_member = get_final_amar,
+           use_for_generation = lambda l: min(l))
+    plt.close()
+
+    # Finally show precision/recall for the best of each experiment
+    plt.figure()
+    # TODO do precision/recall with upgraded method of Inge
+    plt.close()
+    
+
+
 # Making some plots, in rough predicted order of smoothness -> chaos
 # Current SIDE EFFECT of multiple plots: they will be added to eachother (but this can be useful for now)
-'''
+
 plot_evolution("evo90_progress_finalAMAR_min", ["Evo_90_fixed"],
                use_for_member = get_final_amar,
                use_for_generation = lambda l: min(l))
+'''
 plot_evolution("evo90_progress_finalAMAR_avg", ["Evo_90_fixed"],
                use_for_member = get_final_amar,
                use_for_generation = avg)
@@ -166,7 +200,8 @@ plot_evolution("evo90_progress_MAR_avg", ["Evo_90_fixed"],
                use_for_generation = avg)
 '''
 
-find_best(test_path + "Evo_90_fixed\\")
+#find_best(test_path + "Evo_90_fixed\\")
+make_slide_figures()
 
 
 
