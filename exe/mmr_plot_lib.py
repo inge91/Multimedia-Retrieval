@@ -13,7 +13,7 @@ path = "F:\MMR\tests\evo_60_fixed\generation0\\"
 # plot precision-recall #
 # plots all precision and recall files that could be found
 # in a single graph
-def plot_precision_recall(paths, file_names = []):
+def plot_precision_recall(plot_name, paths, file_names = []):
    
     artists = []
     artist_strings =[]
@@ -52,7 +52,7 @@ def plot_precision_recall(paths, file_names = []):
     plt.title('Recall & Precision of best MMS')
     plt.legend(artists, artist_strings)
     print "Saving to file"
-    plt.savefig('..\\precision_recall.png')
+    plt.savefig(plot_name + '.png')
     plt.close()
     
     
@@ -255,7 +255,7 @@ def make_slide_figures():
     #plot_from_file( "YOUR_PATH_HERE\\evo_60_fixed_best_pc_recall.p", "YOUR_PATH_HERE\\evo_60_fixed_best_pc_precision.p", "YOUR_PATH_HERE\\evo_60_fixed_best_pc_legend.txt")
     #plot_from_file( "YOUR_PATH_HERE\\evo_30_fixed_best_pc_recall.p", "YOUR_PATH_HERE\\evo_30_fixed_best_pc_precision.p", "YOUR_PATH_HERE\\evo_30_fixed_best_pc_legend.txt")
     ######## ADD YOUR BEST PERFORMING ELEMENT HERE
-    #plot_precision_recall(["F:\\MMR\\tests\\evo_60_fixed\\generation40\\202"])
+    #plot_precision_recall("slide5", ["F:\\MMR\\tests\\evo_60_fixed\\generation40\\202"])
     
     # TODO do precision/recall with upgraded method of Inge
     plt.close()
