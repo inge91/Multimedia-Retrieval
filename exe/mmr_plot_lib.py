@@ -6,30 +6,77 @@ import mmr_lib
 import cPickle
 
 # Hardcoded path to experiment dir (either absolute or relative)
-test_path = "T:\\Documents\\UUstuff\\MMR\\"
+#test_path = "T:\\Documents\\UUstuff\\MMR\\"
 
-path = "T:\\Documents\\UUstuff\\MMR\\Evo_90_fixed\\generation0\\"
+#path = "T:\\Documents\\UUstuff\\MMR\\Evo_90_fixed\\generation0\\"
 
 # plot precision-recall #
 # plots all precision and recall files that could be found
 # in a single graph
-def plot_precision_recall():
-    for element in os.listdir(path):
-        if os.path.isdir(path + element):
+def plot_precision_recall(paths):
+   
+    artists = []
+    artist_strings =[]
+    plt.figure()
             #rp_path = mmr_lib.test_path + element + "\\" + "eval\\"
-            rp_path = path + element + "\\" + "eval\\"
-            if not os.path.exists(rp_path):
-                continue
-            p = cPickle.load(open(rp_path+"precision.p", "rb"))
-            r = cPickle.load(open(rp_path+"recall.p", "rb"))
-            print "Plotting " + element
-            plt.plot(r,p, 'o-')
-                       
+    for p in paths:
+       
+        rp_path = p + "\\eval\\"
+ 
+        train_size = find_trainingset_size(p)
+        
+        if not os.path.exists(rp_path):
+            continue
+        p = cPickle.load(open(rp_path+"precision.p", "rb"))
+     
+        r = cPickle.load(open(rp_path+"recall.p", "rb"))
+
+        pr = zip(p,r)
+        
+        pr_clean = diff_recall(pr)
+        print pr_clean
+        p = [x[0] for x in pr_clean]
+        r = [x[1] for x in pr_clean]
+        print "Plotting "
+        f, = plt.plot(r,p, 'o-')
+        artists += [f]
+      
+        artist_strings += ["MM with trainingsize " + str(train_size)]
     plt.xlabel('Recall')
     plt.ylabel('Precision')
-    plt.title('Recall & Precision of various MM')
+    plt.title('Recall & Precision of best MMS')
+    plt.legend(artists, artist_strings)
     print "Saving to file"
-    plt.savefig(path + '\\precision_recall.png')
+    plt.savefig('..\\precision_recall.png')
+    plt.close()
+    
+    
+def diff_recall(pr_list):
+    recall = pr_list[0][1]
+    final_pr = [(pr_list[0][0], pr_list[0][1])]
+    for pr in pr_list:
+        d_recall = recall - pr[1]
+        if d_recall == 0:
+            continue
+        else:
+            final_pr += [pr]
+        recall = pr[1]
+    print final_pr
+    return final_pr
+
+def find_trainingset_size(p):
+    print p
+    mm_path =  p + "\\" + "MorphableModel\\"
+    mm_list = []
+    # loop through all files
+    for filename in os.listdir(mm_path):
+        # if a file end with ply and begins with a number
+        # add the number to the mm list
+        if(filename.endswith(".ply")):
+            if filename[0].isdigit():
+                mm_list += [int(filename[0:3])]
+    return len(mm_list)
+     
     
 
 # Look for the last generation where the member was present,
@@ -178,10 +225,12 @@ def make_slide_figures():
 
 # Making some plots, in rough predicted order of smoothness -> chaos
 # Current SIDE EFFECT of multiple plots: they will be added to eachother (but this can be useful for now)
+#
+#plot_evolution("evo90_progress_finalAMAR_min", ["Evo_90_fixed"],
+#               use_for_member = get_final_amar,
+#               use_for_generation = lambda l: min(l))
 
-plot_evolution("evo90_progress_finalAMAR_min", ["Evo_90_fixed"],
-               use_for_member = get_final_amar,
-               use_for_generation = lambda l: min(l))
+
 '''
 plot_evolution("evo90_progress_finalAMAR_avg", ["Evo_90_fixed"],
                use_for_member = get_final_amar,
@@ -201,7 +250,7 @@ plot_evolution("evo90_progress_MAR_avg", ["Evo_90_fixed"],
 '''
 
 #find_best(test_path + "Evo_90_fixed\\")
-make_slide_figures()
+#make_slide_figures()
 
 
 
