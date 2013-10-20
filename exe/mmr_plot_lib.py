@@ -157,7 +157,7 @@ def plot_evolution(plot_name, experiment_names, use_for_member = get_final_amar,
             # write legend entree
             f = open(file_names[experiment_names.index(experiment_name)] + "_legend.txt", "w")
             f.write(description[experiment_names.index(experiment_name)])
-    plt.legend(loc='upper right', numpoints = 1)
+    plt.legend(loc='lower left', numpoints = 1)
     # Finally save the plot
     plt.xlabel('Generation')
     plt.ylabel('Generation value')
