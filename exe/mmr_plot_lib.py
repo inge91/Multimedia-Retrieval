@@ -46,6 +46,7 @@ def plot_precision_recall(plot_name, paths, file_names = []):
     plt.xlabel('Recall')
     plt.ylabel('Precision')
     plt.title('Recall & Precision of best MMS')
+    plt.legend(loc='lower left', numpoints = 1)
     print "Saving to file"
     plt.savefig(plot_name + '.png')
     
