@@ -13,7 +13,7 @@ path = "F:\MMR\tests\evo_60_fixed\generation0\\"
 # plot precision-recall #
 # plots all precision and recall files that could be found
 # in a single graph
-def plot_precision_recall(paths):
+def plot_precision_recall(paths, file_names = []):
    
     artists = []
     artist_strings =[]
@@ -27,21 +27,26 @@ def plot_precision_recall(paths):
         
         if not os.path.exists(rp_path):
             continue
-        p = cPickle.load(open(rp_path+"precision.p", "rb"))
+        precision = cPickle.load(open(rp_path+"precision.p", "rb"))
      
-        r = cPickle.load(open(rp_path+"recall.p", "rb"))
+        recall = cPickle.load(open(rp_path+"recall.p", "rb"))
 
-        pr = zip(p,r)
+        pr = zip(precision,recall)
         
         pr_clean = diff_recall(pr)
         print pr_clean
-        p = [x[0] for x in pr_clean]
-        r = [x[1] for x in pr_clean]
+        precision = [x[0] for x in pr_clean]
+        recall = [x[1] for x in pr_clean]
         print "Plotting "
-        f, = plt.plot(r,p, 'o-')
+        f, = plt.plot(recall,precision, 'o-')
         artists += [f]
-      
         artist_strings += ["MM with trainingsize " + str(train_size)]
+        if len(file_names) > 0:
+            cPickle.dump(recall, open(file_names[paths.index(p)] + "_recall.p", "w") ) 
+            cPickle.dump(precision , open(file_names[paths.index(p)] + "_precision.p", "w") )
+            # write legend entree
+            f = open(file_names[paths.index(p)] + "_legend.txt", "w")
+            f.write(artist_strings[paths.index(p)])
     plt.xlabel('Recall')
     plt.ylabel('Precision')
     plt.title('Recall & Precision of best MMS')
@@ -108,7 +113,7 @@ def get_final_amar(experiment_path, member, member_path):
 
 # For each experiment (directory) given, plot the progress
 # made by the evolutionary algorithm.
-def plot_evolution(plot_name, experiment_names, use_for_member = get_final_amar, use_for_generation = lambda l: min(l), description = []):
+def plot_evolution(plot_name, experiment_names, use_for_member = get_final_amar, use_for_generation = lambda l: min(l), description = [], file_names = []):
     print "   ---   Plotting Evolution   ---   "
     legend = []
     for experiment_name in experiment_names:      
@@ -148,7 +153,15 @@ def plot_evolution(plot_name, experiment_names, use_for_member = get_final_amar,
         
         # Plot the development of the min. AMAR over the generations
         legend += plt.plot(plot_points, "o-", label=description[experiment_names.index(experiment_name)])
-
+        print len(plot_points)
+        # if filenames are given, write the data to file
+        if len(file_names) > 0:
+            # write AMAR/MAR values
+            cPickle.dump(plot_points, open(file_names[experiment_names.index(experiment_name)] + "_generation_value.p", "w") ) 
+            cPickle.dump(range(0, len(plot_points)) , open(file_names[experiment_names.index(experiment_name)] + "_generations.p", "w") )
+            # write legend entree
+            f = open(file_names[experiment_names.index(experiment_name)] + "_legend.txt", "w")
+            f.write(description[experiment_names.index(experiment_name)])
     plt.legend(loc='upper right', numpoints = 1)
     # Finally save the plot
     plt.xlabel('Generation')
@@ -156,7 +169,21 @@ def plot_evolution(plot_name, experiment_names, use_for_member = get_final_amar,
     plt.title('Progress of the evolutionary algorithm')
     print "Saving to file"
     plt.savefig(test_path + plot_name + '.png')
-
+    
+# plots evolution from files
+# first argument x axis values
+# second argument y axis value
+# third argument legend
+def plot_from_file(x_file, y_file, legend_file):
+    print x_file
+    f = open(x_file, 'r')
+    x = cPickle.load(f)
+    y = cPickle.load(open(y_file, 'r'))
+    l = open(legend_file, 'rb')
+    legend = l.readline()
+    plt.plot(x, y, "o-", label=legend)
+    
+    
 # Plugin functions for plot_evolution
 def get_current_amar(experiment_path, member, member_path):
     return float( cPickle.load(open(member_path + "\\eval\\average_mar.p", "rb")) )
@@ -199,13 +226,13 @@ def make_slide_figures():
     # Only for one of the experiments
     # TODO maybe use 30 for this example instead of 90
     plt.figure()
-    plot_evolution("..\\slide1", ["Evo_60_fixed"],
+    plot_evolution("slide1", ["Evo_90_fixed"],
                use_for_member = get_mar,
                use_for_generation = lambda l: min(l), description = ["Minimal MAR"])
-    plot_evolution("..\\slide2", ["Evo_60_fixed"],
+    plot_evolution("slide2", ["Evo_90_fixed"],
                use_for_member = get_current_amar,
                use_for_generation = lambda l: min(l), description = ["current AMAR"])
-    plot_evolution("..\slide3", ["Evo_60_fixed"],
+    plot_evolution("slide3", ["Evo_90_fixed"],
                use_for_member = get_final_amar,
                use_for_generation = lambda l: min(l), description = ["final AMAR"])
     plt.close()
@@ -213,13 +240,23 @@ def make_slide_figures():
     # Next compare the experiments with eachother (using final AMAR)
     # TODO add 30 and 60
     plt.figure()
+    ######### THESE SHOULD BE UNCOMMENT WHEN YOU ADDED YOUR_PATH_HERE ###########
+    #plot_from_file( "YOUR_PATH_HERE\\evo_60_fixed_final_amar_generations.p", "YOUR_PATH_HERE\\evo_60_fixed_final_amar_generation_value.p", "YOUR_PATH_HERE\\evo_60_fixed_final_amar_legend.txt")
+    #plot_from_file( "YOUR_PATH_HERE\\evo_30_fixed_final_amar_generations.p", "YOUR_PATH_HERE\\evo_30_fixed_final_amar_generation_value.p", "YOUR_PATH_HERE\\evo_30_fixed_final_amar_legend.txt")
     plot_evolution("slide4", ["Evo_90_fixed"],
            use_for_member = get_final_amar,
-           use_for_generation = lambda l: min(l))
+           use_for_generation = lambda l: min(l), description = ["final AMAR for training size 90"])
+    
     plt.close()
 
     # Finally show precision/recall for the best of each experiment
     plt.figure()
+     ######### THESE SHOULD BE UNCOMMENT WHEN YOU ADDED YOUR_PATH_HERE ###########
+    #plot_from_file( "YOUR_PATH_HERE\\evo_60_fixed_best_pc_recall.p", "YOUR_PATH_HERE\\evo_60_fixed_best_pc_precision.p", "YOUR_PATH_HERE\\evo_60_fixed_best_pc_legend.txt")
+    #plot_from_file( "YOUR_PATH_HERE\\evo_30_fixed_best_pc_recall.p", "YOUR_PATH_HERE\\evo_30_fixed_best_pc_precision.p", "YOUR_PATH_HERE\\evo_30_fixed_best_pc_legend.txt")
+    ######## ADD YOUR BEST PERFORMING ELEMENT HERE
+    #plot_precision_recall(["F:\\MMR\\tests\\evo_60_fixed\\generation40\\202"])
+    
     # TODO do precision/recall with upgraded method of Inge
     plt.close()
     
@@ -252,9 +289,12 @@ plot_evolution("evo90_progress_MAR_avg", ["Evo_90_fixed"],
 '''
 
 #find_best(test_path + "Evo_90_fixed\\")
-make_slide_figures()
+#make_slide_figures()
+#plot_evolution("slidebla", ["Evo_60_fixed"],
+#           use_for_member = get_final_amar,
+#           use_for_generation = lambda l: min(l), description = ["final amar"], file_names = ["evo_60_fixed_final_amar"])
 
-
-
-
-    
+#make_slide_figures()
+#member, score = find_best("F:\\MMR\\tests\\evo_60_fixed\\")
+#print member
+plot_precision_recall(["F:\\MMR\\tests\\evo_60_fixed\\generation40\\202"], ["evo_60_fixed_best_pc"])
