@@ -6,9 +6,9 @@ import mmr_lib
 import cPickle
 
 # Hardcoded path to experiment dir (either absolute or relative)
-#test_path = "T:\\Documents\\UUstuff\\MMR\\"
+test_path = "F:\\MMR\\tests\\"
 
-#path = "T:\\Documents\\UUstuff\\MMR\\Evo_90_fixed\\generation0\\"
+path = "F:\MMR\tests\evo_60_fixed\generation0\\"
 
 # plot precision-recall #
 # plots all precision and recall files that could be found
@@ -108,8 +108,9 @@ def get_final_amar(experiment_path, member, member_path):
 
 # For each experiment (directory) given, plot the progress
 # made by the evolutionary algorithm.
-def plot_evolution(plot_name, experiment_names, use_for_member = get_final_amar, use_for_generation = lambda l: min(l)):
+def plot_evolution(plot_name, experiment_names, use_for_member = get_final_amar, use_for_generation = lambda l: min(l), description = []):
     print "   ---   Plotting Evolution   ---   "
+    legend = []
     for experiment_name in experiment_names:      
         # Try to find each experiment dir
         experiment_path = test_path + experiment_name + "\\"
@@ -146,8 +147,9 @@ def plot_evolution(plot_name, experiment_names, use_for_member = get_final_amar,
             generation += 1
         
         # Plot the development of the min. AMAR over the generations
-        plt.plot(plot_points, "o-")
+        legend += plt.plot(plot_points, "o-", label=description[experiment_names.index(experiment_name)])
 
+    plt.legend(loc='upper right', numpoints = 1)
     # Finally save the plot
     plt.xlabel('Generation')
     plt.ylabel('Generation value')
@@ -197,15 +199,15 @@ def make_slide_figures():
     # Only for one of the experiments
     # TODO maybe use 30 for this example instead of 90
     plt.figure()
-    plot_evolution("slide1", ["Evo_90_fixed"],
+    plot_evolution("..\\slide1", ["Evo_60_fixed"],
                use_for_member = get_mar,
-               use_for_generation = lambda l: min(l))
-    plot_evolution("slide2", ["Evo_90_fixed"],
+               use_for_generation = lambda l: min(l), description = ["Minimal MAR"])
+    plot_evolution("..\\slide2", ["Evo_60_fixed"],
                use_for_member = get_current_amar,
-               use_for_generation = lambda l: min(l))
-    plot_evolution("slide3", ["Evo_90_fixed"],
+               use_for_generation = lambda l: min(l), description = ["current AMAR"])
+    plot_evolution("..\slide3", ["Evo_60_fixed"],
                use_for_member = get_final_amar,
-               use_for_generation = lambda l: min(l))
+               use_for_generation = lambda l: min(l), description = ["final AMAR"])
     plt.close()
     
     # Next compare the experiments with eachother (using final AMAR)
@@ -250,7 +252,7 @@ plot_evolution("evo90_progress_MAR_avg", ["Evo_90_fixed"],
 '''
 
 #find_best(test_path + "Evo_90_fixed\\")
-#make_slide_figures()
+make_slide_figures()
 
 
 
