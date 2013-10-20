@@ -35,6 +35,7 @@ def plot_precision_recall():
 # Look for the last generation where the member was present,
 # to retrieve the final measurement of its Average MAR through the generations.
 def get_final_amar(experiment_path, member, member_path):
+    #print "Called with (", experiment_path, ",", member, ",", member_path, ")"
     gen = 0
     # Start searching from first generation, ignore given member_path
     member_path = experiment_path + "generation" + str(gen) + "\\" + member + "\\"
@@ -117,10 +118,34 @@ def get_mar(experiment_path, member, member_path):
 avg = lambda l: (sum(l)/float(len(l)))
 
 
+# Find best member across generations in given experiment_path
+#   best member has the LOWEST value for evaluate(member)
+def find_best(experiment_path, evaluate = get_final_amar):
+    best_score = 999999.9
+    best_member = ""
+    
+    for generation_folder in os.listdir(experiment_path):
+        generation_path = experiment_path + generation_folder + "\\"
+        for member_folder in os.listdir(generation_path):
+            member_path = generation_path + member_folder + "\\"
+            if not os.path.isdir(member_path):
+                    print "Skipping", member_path, ", this is not a directory!"
+                    continue
+            
+            score = evaluate(experiment_path, member_folder, member_path)
+            if score <= best_score:
+                best_score = score
+                best_member = member_folder
+                print "Found better member", member_folder, "with score", score, "in generation", generation_folder
+
+    # Return tuple of member and its score
+    print "Final best member is", best_member, "with score", best_score
+    return best_member, best_score;
 
 
 # Making some plots, in rough predicted order of smoothness -> chaos
 # Current SIDE EFFECT of multiple plots: they will be added to eachother (but this can be useful for now)
+'''
 plot_evolution("evo90_progress_finalAMAR_min", ["Evo_90_fixed"],
                use_for_member = get_final_amar,
                use_for_generation = lambda l: min(l))
@@ -139,6 +164,10 @@ plot_evolution("evo90_progress_MAR_min", ["Evo_90_fixed"],
 plot_evolution("evo90_progress_MAR_avg", ["Evo_90_fixed"],
                use_for_member = get_mar,
                use_for_generation = avg)
+'''
+
+find_best(test_path + "Evo_90_fixed\\")
+
 
 
 
