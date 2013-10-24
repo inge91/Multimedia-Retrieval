@@ -225,25 +225,25 @@ def evolutionary_algorithm(test_name):
     # How many members of an old generation should go on to the next
     no_survivors = no_population - no_children
     
-    iteration = 0
-    #iteration = 51
+    #iteration = 0
+    iteration = 75
 
     
     generation_path = test_name + "\\" + "generation" + str(iteration) + "\\"
     
     # Generation 0: make a current_population from random MM's
-    current_population = range(0, no_population)
-    #current_population = [233, 248, 249, 251, 258, 260, 261, 262, 263, 264]
-
+    #current_population = range(0, no_population)
+    current_population = [356,359,372,375,377,380,381,382,383,384]
+    '''
     for member in current_population:       
             cleanup_exe()
             # choose random scans for each member of generation 0
             full_test(generation_path + str(member) + "\\", random.sample(xrange(477, 608), mm_size), query_size)
-    
+    '''
 
     #retrieves the fitness of current population
     # But first write the new average MAR
-    write_average_mar(current_population, generation_path)
+    #write_average_mar(current_population, generation_path)
 
     current_fitness = retrieve_fitness(current_population, generation_path)
     # sorts the population, best fitness in the front, and worst in the back
@@ -264,8 +264,8 @@ def evolutionary_algorithm(test_name):
     cleanup_exe()
 
     #Keep track of 'how to call' the next child
-    next_identifier = no_population
-    #next_identifier = 265
+    #next_identifier = no_population
+    next_identifier = 385
     
     # Stop condition: if not yet in the right error range or
     # The amount of iteratins has not yet ended
@@ -886,6 +886,37 @@ def execute(command):
     print "Executing", command
     ret = subprocess.call(command, shell=run_in_background)
 
+# Set up the fixed query and testset
+def setup_fixed_testingsets():
+    fixed_query_path = scan_path + "FixedQuerySet"
+    fixed_test_path = scan_path + "FixedTestSet"
+    
+    if os.path.exists(fixed_query_path) or os.path.exists(fixed_test_path):
+        print "[ERROR] one or two of the Fixed set folders already exist!"
+        return
+    
+    # The fixed query/testset contain faces 488 - 607 (inclusive)
+    faces = range(588, 608)
+    types = ["a","b","c","d","e"]
+    query_scans = []
+    count = 0
+    # Query an even amount of each scan type
+    for face in faces:
+        scan = str(face) + types[count % len(types)] 
+        query_scans.append(scan)  
+        count += 1
+        #print "Scan ", scan
+    
+    # Fill query folder
+    os.makedirs(fixed_query_path)
+    move_files_filter(mirror_path, fixed_query_path, query_scans)
+
+    # Fill test folder
+    os.makedirs(fixed_test_path)
+    move_files_filter(mirror_path, fixed_test_path, faces)
+
+    # Remove from facecor folder
+    cleanup_filter(facecor_path, range(477, 588))
 
 
 #precalc_facecor();
@@ -895,6 +926,8 @@ def execute(command):
 
 #cleanup_exe()
 #evolutionary_algorithm("EvoAlg_90_fixed")
+
+setup_fixed_testingsets()
 
 
 
