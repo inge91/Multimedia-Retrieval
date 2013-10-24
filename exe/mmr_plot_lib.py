@@ -261,10 +261,10 @@ def make_slide_figures():
     plt.figure()
      ######### THESE SHOULD BE UNCOMMENT WHEN YOU ADDED YOUR_PATH_HERE ###########
     
-    plot_from_file( your_path_here + "\\evo_60_fixed_best_pc_recall.p", your_path_here + "\\evo_60_fixed_best_pc_precision.p", your_path_here + "\\evo_60_fixed_best_pc_legend.txt")
-    plot_from_file( your_path_here + "\\evo_30_fixed_best_pc_recall.p", your_path_here + "\\evo_30_fixed_best_pc_precision.p", your_path_here + "\\evo_30_fixed_best_pc_legend.txt")
+    plot_from_file( your_path_here + "\\evo_60_fixed_mar_recall.p", your_path_here + "\\evo_60_fixed_mar_precision.p", your_path_here + "\\evo_60_fixed_mar_legend.txt")
+    plot_from_file( your_path_here + "\\evol_30_fixed_mar_recall.p", your_path_here + "\\evol_30_fixed_mar_precision.p", your_path_here + "\\evol_30_fixed_mar_legend.txt")
         ######## ADD YOUR BEST PERFORMING ELEMENT HERE
-    plot_precision_recall("slide5", [test_path + "Evo_90_fixed\\generation74\\372"])
+    plot_precision_recall("slide5", [test_path + "Evo_90_fixed\\generation51\\233"])
     
     # TODO do precision/recall with upgraded method of Inge
     plt.close()
@@ -303,9 +303,11 @@ plot_evolution("evo90_progress_MAR_avg", ["Evo_90_fixed"],
 #           use_for_member = get_final_amar,
 #           use_for_generation = lambda l: min(l), description = ["final amar"], file_names = ["evo_60_fixed_final_amar"])
 
-#make_slide_figures()
+make_slide_figures()
 
 #member, score = find_best(test_path + "Evo_60_fixed\\", evaluate = get_mar)
+#member, score = find_best(test_path + "Evo_90_fixed\\", evaluate = get_mar)
+
 #print member
 #print score
 plot_precision_recall("best_190_amar", ["F:\\MMR\\tests\\evo_60_fixed\\generation37\\190"],["evo_60_fixed_mar"])

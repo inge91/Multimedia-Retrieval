@@ -64,11 +64,13 @@ run_in_background = True
 # Evolutionary algorithm 
 no_parents = 3
 no_population = 10
-no_mutation = 15
 no_children = 5
-mm_size = 90
-max_iter = 9999
-query_size = 10
+mm_size = 70
+query_size = 20
+
+# no_mutation is already calculated automatically
+mutation_factor = 1.0/6.0
+no_mutation = int(round( mutation_factor * mm_size ))
 ###
 
 
@@ -257,7 +259,7 @@ def full_test(test_name, training_set, query_amount):
     #not needed in case of fixed query and testset
     #generate_random_testingsets (test_name, query_amount, training_set)
     morphfit_scans_fixed (test_name, len(training_set))
-    evaluate_results(test_name, )
+    evaluate_results(test_name)
 
 # Uses the hardcoded functions
 def full_test_fast (test_name):
@@ -276,59 +278,54 @@ def evolutionary_algorithm(test_name):
     # How many members of an old generation should go on to the next
     no_survivors = no_population - no_children
     
-    #iteration = 0
-    iteration = 75
+    iteration = 0
+    #iteration = 75
 
     generation_path = test_name + "\\" + "generation" + str(iteration) + "\\"
     
     # Generation 0: make a current_population from random MM's
-    #current_population = range(0, no_population)
-    current_population = [356,359,372,375,377,380,381,382,383,384]
-    '''
+    current_population = range(0, no_population)
+    #current_population = [356,359,372,375,377,380,381,382,383,384]
+
+    
     for member in current_population:       
             cleanup_exe()
             # choose random scans for each member of generation 0
-            full_test(generation_path + str(member) + "\\", random.sample(xrange(477, 608), mm_size), query_size)
-    '''
+            full_test(generation_path + str(member) + "\\", random.sample(xrange(477, 588), mm_size), query_size)
+    
 
     #retrieves the fitness of current population
-    # But first write the new average MAR
-    #write_average_mar(current_population, generation_path)
-
     current_fitness = retrieve_fitness(current_population, generation_path)
     # sorts the population, best fitness in the front, and worst in the back
     sorted_population = zip(current_population, current_fitness)
     sorted_population.sort(key=lambda x: x[1], reverse = True)
 
-
-    #Write data to log file
-    
+    #Write data to log file   
     log_file = open( mmr_path + "log.txt", "a")
     log_file.write("Generation: " + str(iteration))
     log_file.write("\n")
     print_tuple_list(log_file, "Distance: ", sorted_population)
     log_file.write("\n")
     log_file.close()
-    
-    
+        
     cleanup_exe()
 
     #Keep track of 'how to call' the next child
-    #next_identifier = no_population
-    next_identifier = 385
+    next_identifier = no_population
+    #next_identifier = 385
     
-    # Stop condition: if not yet in the right error range or
-    # The amount of iteratins has not yet ended
-    # The optimal possible rank is 
-    #while( if sorted_population[0][0] < 1/3.0 or iteration < 9999):
-    while( iteration < max_iter):                      
+    # Keep running until killed
+    while(True):                      
         iteration += 1
         generation_path_prev = generation_path
         generation_path = test_name + "\\" + "generation" + str(iteration) + "\\"
+
+        # Remove old directories that are no longer needed
+        # For space efficiency
+        remove_dead(generation_path_prev)
         
         # The children are created by choosing the parents
         # and mixing them together(with a little mutation)
-        #TODO: Should this be prev?
         new_offspring, parents = create_offspring(sorted_population, generation_path_prev)
         # Determine the survivors from the previous round
         old_survivors = sorted_population[:no_survivors]
@@ -337,19 +334,16 @@ def evolutionary_algorithm(test_name):
         current_population = [] 
         # Test the children (and give them new identifiers)
         for child in new_offspring:
-                full_test(generation_path + str(next_identifier) + "\\", child, query_size)
-                current_population += [next_identifier]
-                next_identifier += 1
+            full_test(generation_path + str(next_identifier) + "\\", child, query_size)
+            current_population += [next_identifier]
+            next_identifier += 1
 
-        # Test the old survivors
+        # Don't test the old survivors, just copy them
+        #  (space inefficient but nice for data analysis afterwards)
         for survivor in old_survivors:
-                scans = find_mm_scans(generation_path_prev + str(survivor[0]))
-                full_test(generation_path + str(survivor[0]) + "\\", scans, query_size)
-                current_population += [survivor[0]]
-
-        # Update the average MAR for the members (and create new ones for the children)
-        write_average_mar(current_population, generation_path, generation_path_prev)
-        
+            shutil.copytree(test_path + generation_path_prev + str(survivor[0]),
+                            test_path + generation_path + str(survivor[0]))
+            current_population += [survivor[0]]      
         
         # Get fitness of this generation's members
         population_fitness = retrieve_fitness(current_population, generation_path)
@@ -368,9 +362,6 @@ def evolutionary_algorithm(test_name):
         print_tuple_list(log_file, "Distance: ", sorted_population)
         log_file.write("\n")
         log_file.close()
-        # Remove all directories that no longer belong to the population
-        # For space efficiency
-        remove_dead(generation_path_prev, sorted_population)
 
         # Some much needed cleanup of the exe directory
         cleanup_exe()
@@ -384,7 +375,7 @@ def evolutionary_algorithm(test_name):
 
     
 # Removes all dead directories to save space
-def remove_dead(previous_generation_path, alive):
+def remove_dead(previous_generation_path):
     for i in os.listdir(test_path + previous_generation_path):
         shutil.rmtree(test_path + previous_generation_path + i + "\\QuerySet\\")
         shutil.rmtree(test_path + previous_generation_path + i + "\\TestSet\\")
@@ -399,13 +390,12 @@ def create_offspring(population, test_name):
     # The complete population size
     n = len(population)
     # Create probability distribution depending on fitness for each
-    # potential parent. Devide by squared fittest candidate
+    # potential parent. Divide by squared fittest candidate
     prob_set = [int((((x[1]*x[1])/ (population[0][1]*population[0][1]) )) * 100) for x in population]
     
     choice_set = [] 
     # depending of the fitness for each participant in the population
-    # create the probability it should be chosen from a set we use 2**n for most likely
-    # and 2 ** 1 for least likely
+    # create the probability it should be chosen from a set
     for i in range(0, n):
         choice_set += [i] * prob_set[i]
     
@@ -418,19 +408,7 @@ def create_offspring(population, test_name):
         # Remove parent that is already used from choise
         choice_set = filter(lambda v: v != p , choice_set)
         
-    offspring = []  
-    
-    # For all combination of parents create 
-    # children
-    #previous = [] 
-    #for p1 in parents:
-    #    for p2 in parents:
-    #        if (p1 == p2) or (p2 in previous):
-    #            continue
-    #        # Create a specific number of children for each parent couple
-    #        for i in range(0, no_children):
-    #            offspring += [create_child(p1, p2, test_name)]
-    #        previous += [p1] 
+    offspring = []
     
     for i in range(0, no_children):
         offspring.append(create_child(parents, test_name))
@@ -446,14 +424,14 @@ def create_child(parents, test_name):
     for i in parents:
         parent_scan_list.append(find_mm_scans(test_name + str(i)))
     # The range of the mutation
-    parent_scan_list.append(range(477, 608))
+    parent_scan_list.append(range(477, 588))
 
-    not_mutated = mm_size - no_mutation  
+    not_mutated = mm_size - no_mutation
+    
     # Let the probability of p1 and p2 be the same
     # ceil in case the amount is a float and we do
-    # not want the mutation to be more prominent
-    
-    # Devision of parent probabilities
+    # not want the mutation to be more prominent   
+    # Division of parent probabilities
     amount = int(math.ceil(not_mutated * 1/float(len(parents))))
     
     #Sequence from which the random generator chooses
@@ -463,7 +441,6 @@ def create_child(parents, test_name):
         seq += [i] * amount
         
     seq += [len(parents)] * no_mutation
-    
  
     # Each element has a chance
     # of being from p1, p2 or part of the mutation
@@ -510,10 +487,10 @@ def retrieve_fitness(candidates, evol_path):
                 print  path,
                 print  "is missing.. Exiting"
                 sys.exit(1)
-        # Retrieve the average MAR from the pickle
-        average_mar = float( cPickle.load(open(path + "average_mar.p")) )
-        ranks += [1 / average_mar]
-         
+        # Retrieve the MAR from the pickle
+        mar = float( cPickle.load(open(path + "mean_average_rank.p")) )
+        ranks += [1 / mar]
+
     return ranks
 
 # Write the new average MAR for all members
@@ -970,15 +947,11 @@ def setup_fixed_testingsets():
 
 
 #precalc_facecor();
-cleanup_exe()
 #cleanup_test("test1")    
 #full_test("sigma_test", range(477, 477 + n), 2)
 
-#cleanup_exe()
-#evolutionary_algorithm("EvoAlg_90_fixed")
-
-setup_fixed_testingsets()
-
+cleanup_exe()
+evolutionary_algorithm("EvoAlg_70")
 
 
 # TIME (Tim PC) - full_test_fast:
