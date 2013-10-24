@@ -279,20 +279,20 @@ def evolutionary_algorithm(test_name):
     no_survivors = no_population - no_children
     
     iteration = 0
-    #iteration = 75
+    #iteration = 1
 
     generation_path = test_name + "\\" + "generation" + str(iteration) + "\\"
     
     # Generation 0: make a current_population from random MM's
     current_population = range(0, no_population)
-    #current_population = [356,359,372,375,377,380,381,382,383,384]
+    #current_population = [4,5,7,8,9,11,12,13,14]
 
-    
+  
     for member in current_population:       
             cleanup_exe()
             # choose random scans for each member of generation 0
-            full_test(generation_path + str(member) + "\\", random.sample(xrange(477, 588), mm_size), query_size)
-    
+            full_test(generation_path + str(member) + "\\", random.sample(xrange(477, 588), mm_size), query_size)      
+
 
     #retrieves the fitness of current population
     current_fitness = retrieve_fitness(current_population, generation_path)
@@ -312,7 +312,7 @@ def evolutionary_algorithm(test_name):
 
     #Keep track of 'how to call' the next child
     next_identifier = no_population
-    #next_identifier = 385
+    #next_identifier = 15
     
     # Keep running until killed
     while(True):                      
@@ -377,8 +377,12 @@ def evolutionary_algorithm(test_name):
 # Removes all dead directories to save space
 def remove_dead(previous_generation_path):
     for i in os.listdir(test_path + previous_generation_path):
-        shutil.rmtree(test_path + previous_generation_path + i + "\\QuerySet\\")
-        shutil.rmtree(test_path + previous_generation_path + i + "\\TestSet\\")
+        q_path = test_path + previous_generation_path + i + "\\QuerySet\\"
+        t_path = test_path + previous_generation_path + i + "\\TestSet\\"
+        if os.path.exists(q_path):
+            shutil.rmtree(q_path)
+        if os.path.exists(t_path):
+            shutil.rmtree(t_path)
         #shutil.rmtree(test_path + previous_generation_path + i + "\\MorphableModel")
         
 # Create offspring #
