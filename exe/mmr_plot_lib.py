@@ -6,9 +6,9 @@ import mmr_lib
 import cPickle
 
 # Hardcoded path to experiment dir (either absolute or relative)
-test_path = "T:\\Documents\\UUstuff\\MMR\\"
+test_path = "F:\\MMR\\tests\\"
 
-path = "T:\\Documents\\UUstuff\\MMR\\Evo_90_fixed\generation0\\"
+path = "F:\\MMR\\tests\\evo_60_fixed\\generation0\\"
 
 # plot precision-recall #
 # plots all precision and recall files that could be found
@@ -42,7 +42,7 @@ def plot_precision_recall(plot_name, paths, file_names = []):
             cPickle.dump(precision , open(file_names[paths.index(p)] + "_precision.p", "w") )
             # write legend entree
             f = open(file_names[paths.index(p)] + "_legend.txt", "w")
-            f.write(artist_strings[paths.index(p)])
+            f.write("MM with trainingsize " + str(train_size))
     plt.xlabel('Recall')
     plt.ylabel('Precision')
     plt.title('Recall & Precision of best MMS')
@@ -50,8 +50,8 @@ def plot_precision_recall(plot_name, paths, file_names = []):
     print "Saving to file"
     # THIS PATH IS MY PREFERENCE
     plt.savefig(test_path + plot_name + '.png')
-    
-    
+
+
 def diff_recall(pr_list):
     recall = pr_list[0][1]
     final_pr = [(pr_list[0][0], pr_list[0][1])]
@@ -305,5 +305,7 @@ plot_evolution("evo90_progress_MAR_avg", ["Evo_90_fixed"],
 
 #make_slide_figures()
 
-member, score = find_best(test_path + "Evo_90_fixed\\")
+#member, score = find_best(test_path + "Evo_60_fixed\\", evaluate = get_mar)
 #print member
+#print score
+plot_precision_recall("best_190_amar", ["F:\\MMR\\tests\\evo_60_fixed\\generation37\\190"],["evo_60_fixed_mar"])
