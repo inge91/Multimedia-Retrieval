@@ -46,6 +46,11 @@ facecor_folder = "FaceCorrespondence\\"
 mm_folder = "MorphableModel\\"
 query_folder = "QuerySet\\"
 test_folder = "TestSet\\"
+
+# In case of the new approach with one fixed query set and query path, here the path
+fixed_query_path = scan_path + "FixedQuerySet\\"
+fixed_test_path = scan_path + "FixedTestSet\\" 
+
 result_folder = "Results\\"
 
 # Default set settings
@@ -192,7 +197,52 @@ def morphfit_scans (test_name, mm_size):
         f = open(query_path + filename, 'r')
         print 'Calculating distance to test set for file: ' + filename 
         evaluate_distances(f, testset_path, result_path, test_name)
+        
+# Morphfits the scans that are a fixed queryset and testset and copies these
+# .params to their respective destination folders (and deletes them
+def morphfit_scans_fixed (test_name, mm_size):
 
+    # Path to query and test directories
+    query_path = test_path + test_name + "\\" + query_folder
+    testset_path = test_path + test_name + "\\" + test_folder
+    
+    # Path to the morphable model
+    mm_path = test_path + test_name + "\\" + mm_folder + "data.bin"
+    
+    principal_components = str(mm_size - 1)
+    
+    # Apply morphfit to the  query set
+    execute("morphfit " + fixed_query_path + " 1 " + mm_path + " " + principal_components)
+    
+    if not os.path.exists(query_path):
+        os.makedirs(query_path)
+    
+    # Move *_final.params to Query directory
+    move_files_filter(".\\", query_path, ["final.params"])
+    
+    # Apply morphfit to the  test set
+    execute("morphfit " + fixed_test_path + " 1 " + mm_path + " " + principal_components)
+    
+    if not os.path.exists(testset_path):
+        os.makedirs(testset_path)
+    
+    # Move *_final.params to Test directory
+    move_files_filter(".\\", testset_path, ["final.params"])
+    
+    #Path to results. If it not yet exists, make it
+    result_path = test_path + test_name + "\\" + result_folder
+    if not os.path.exists(result_path):
+        os.makedirs(result_path)
+    
+    #loop through all files in query path
+    for filename in os.listdir(query_path):
+        # make sure the file is a .params
+        if not ("final.params" in filename) :
+            continue
+        f = open(query_path + filename, 'r')
+        print 'Calculating distance to test set for file: ' + filename 
+        evaluate_distances(f, testset_path, result_path, test_name)        
+        
 # 3. Evaluate query results
 def evaluate_results(test_name):
     result_path = test_path + test_name + "\\" + result_folder
@@ -204,8 +254,9 @@ def evaluate_results(test_name):
 # 1-3. Full test
 def full_test(test_name, training_set, query_amount):
     build_mm (test_name, training_set)
-    generate_random_testingsets (test_name, query_amount, training_set)
-    morphfit_scans (test_name, len(training_set))
+    #not needed in case of fixed query and testset
+    #generate_random_testingsets (test_name, query_amount, training_set)
+    morphfit_scans_fixed (test_name, len(training_set))
     evaluate_results(test_name, )
 
 # Uses the hardcoded functions
@@ -228,7 +279,6 @@ def evolutionary_algorithm(test_name):
     #iteration = 0
     iteration = 75
 
-    
     generation_path = test_name + "\\" + "generation" + str(iteration) + "\\"
     
     # Generation 0: make a current_population from random MM's
@@ -920,7 +970,7 @@ def setup_fixed_testingsets():
 
 
 #precalc_facecor();
-#cleanup_exe()
+cleanup_exe()
 #cleanup_test("test1")    
 #full_test("sigma_test", range(477, 477 + n), 2)
 
